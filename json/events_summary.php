@@ -32,25 +32,10 @@
 		if( $row["Priority"] == "5" ) $prio = "NOTICE"; 
 		if( $row["Priority"] == "6" ) $prio = "INFO"; 
 		if( $row["Priority"] == "7" ) $prio = "DEBUG"; 
-		
-//		array_push($items, array("data" => array(array($row["Priority"], intval($row["Qty"])))));
-		//array_push($items, array('label' => $prio, 'data' => array($row["Priority"], intval($row["Qty"]))));
+
 		array_push($items, array($row["Priority"], intval($row["Qty"])));
-		//array_push($ticks, array(intval($row["Priority"]), $prio));
-		//array_push($items, array('label' => $prio, 'data' => array($prio, intval($row["Qty"]))));
-		//array_push($items, array('label' => $prio, 'data' => intval($row["Qty"])));
 	}
 
-//	$arr = array('label' => 'test', 'data' => $items, 'ticks' => $ticks);
-//	$arr = array('label' => 'test', 'data' => $items);
-	//$arr = array('label' => 'test', 'data' => $items);
-	
-	//$res = $res."]}";
-	
-	//echo $res;
-	//mysqli_close($mysqli);
-	
-	//echo json_encode($items);
 	echo json_encode($items);
 
 ?>
