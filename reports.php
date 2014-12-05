@@ -7,7 +7,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>bootstrap-rsyslog-ui</title>
+    <title><?php echo $site_name; ?></title>
 
     <!-- Bootstrap -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
@@ -79,7 +79,7 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="#">bootstrap-rsyslog-ui</a>
+      <a class="navbar-brand" href="#"><?php echo $site_name; ?></a>
     </div>
 
     <!-- Collect the nav links, forms, and other content for toggling -->
