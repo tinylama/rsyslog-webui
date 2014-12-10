@@ -13,6 +13,7 @@
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/bootstrap-table.min.css" rel="stylesheet">
     <link href="css/bootstrap-tooltip.css" rel="stylesheet">
+    <link href="css/bootstrap-context.css" rel="stylesheet">
     <link href="css/custom.css" rel="stylesheet">   
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
@@ -29,30 +30,86 @@
     <script src="js/bootstrap.min.js"></script>
     <script src="js/bootstrap-table.min.js"></script>
 	<script src="js/bootstrap-tooltip.js"></script>
+	<script src="js/bootstrap-context.js"></script>
   	<script type="text/javascript">
+	
+	function replaceAll(find, replace, str) {
+		return str.replace(new RegExp(find, 'g'), replace);
+	}
 	
 	$(function () {
 		
 		getSummary();
 		
+		var selectedRow = "";
+		var selectedNodeText = "";
+		
+		context.init({
+			fadeSpeed: 100,
+			filter: function ($obj){},
+			above: 'auto',
+			preventDoubleContext: true,
+			compress: false
+		});
+		
+		var menu = "";
+		
+		$('#table-style').css( 'cursor', 'pointer' );
+		
+		$("#table-style").delegate("tr td", "mousedown", function(event) {
+			if(event.which == 3){
+			
+				context.destroy($("table-style tr"));
+
+				selectedRow = $(this);
+				selectedNodeText = selectedRow.html();
+				selectedColumn = "";
+				
+				if( selectedRow.index() == 6 ) return;
+				if( selectedRow.index() == 0 ) selectedColumn = "Severity";
+				if( selectedRow.index() == 1 ) selectedColumn = "Date";
+				if( selectedRow.index() == 2 ) selectedColumn = "Facility";
+				if( selectedRow.index() == 3 ) selectedColumn = "Host";
+				if( selectedRow.index() == 4 ) selectedColumn = "Syslogtag";
+				if( selectedRow.index() == 5 ) selectedColumn = "Messagetype";
+				
+				if(selectedRow.find('span').length > 0) selectedNodeText = selectedRow.find('span').html();
+				
+				menu = [{
+				text: 'Add \'' + selectedNodeText + '\' to filterset',
+				action: function () {
+						$("#txtSearch").val($("#txtSearch").val() + "\"" + selectedColumn + "\"=\"" + selectedNodeText + "\" ");
+						$('#cmdSearch').click();
+					}
+				}, {
+					text: 'Exclude \'' + selectedNodeText + '\' in filterset',
+					action: function (t) {
+						$("#txtSearch").val($("#txtSearch").val() + "\"" + selectedColumn + "\"<>\"" + selectedNodeText + "\" ");
+						$('#cmdSearch').click();
+					}
+				}];
+				
+				context.attach($("table-style tr"), menu);
+			}
+		}); 
+	
+		$('#table-style').on('click-row.bs.table', function (e, row, $element) {
+			var modal = $('#mdEventDetails');
+			modal.find('.modal-title').text("Log details");
+			modal.find('.modal-body').text(replaceAll('\n', '<br/>', row.Message));
+
+			$('#mdEventDetails').modal({
+				keyboard: false
+			});
+		});
+
 		$('[data-toggle="tooltip"]').tooltip({
 			'placement': 'top',  
 			'trigger': 'hover focus'
 		});
-		
-		$('#table-style').tooltip({
-			'show': true,
-			'selector':'.myselector',
-			'placement': 'left',
-			'title': function(event){
-				var $this=$(this);
-				//var tds=$this.find('td');            
-				return $this.text();
-				//return "Testing";
-			},        
-		});
-	 	 
-        $('#info, #debug, #notice, #warning, #err, #cmdSearch').click(function () {
+
+		/*
+        $('#info, #debug, #notice, #warning, #err').click(function () {
             var classes = 'table table-hover small-table table-striped';
 			
 			getSummary();
@@ -65,13 +122,8 @@
 				 + '&notice=' + toInt($('#notice').prop('checked'))
 			});
 		});
-
-		$("#cmdJson").on("click", function() {
-			$.get("json/events.php",function(data,status){
-				alert("Data: " + data + "\nStatus: " + status);
-			});
-		});
-				
+		*/
+		/*		
 		function redrawData(bDebug, bInfo, bNotice, bWarning, bError)
 		{
 			$('#debug').prop('checked', bDebug);
@@ -80,9 +132,10 @@
 			$('#warning').prop('checked', bWarning);
 			$('#err').prop('checked', bError);
 			
-			getSummary();
+			//getSummary();
 			
 			var classes = 'table table-hover small-table table-striped';
+			
 			$('#table-style').bootstrapTable('destroy')
 				.bootstrapTable({
 					classes: classes,
@@ -91,44 +144,61 @@
 					 + '&notice=' + toInt($('#notice').prop('checked'))
 				});
 		}
+		*/
 		
-		$('#cmdReset').click(function () {
-			redrawData(true, true, true, true, true);
+		$('#cmdSearch').click(function(e) {
+			var classes = 'table table-hover small-table table-striped';
+			e.preventDefault();
+			var search = $('#txtSearch').val();
+			//$('#txtSearch').val(search);
+			
+			getSummary();
+
+			$('#table-style').bootstrapTable('destroy')
+				.bootstrapTable({
+					classes: classes,
+					url: 'json/events.php?&search=' + encodeURIComponent(search)
+			});
+			
+			console.log(encodeURIComponent(search));
+		});
+		
+		$('#cmdReset').click(function (e) {
+			e.preventDefault();
+			$("#txtSearch").val("");
+			$('#cmdSearch').click();
 		});
 
 		$("#pgDebug").on("click", function() {
-			redrawData(true, false, false, false, false);
+			$("#txtSearch").val($("#txtSearch").val() + "\"Severity\"=\"DEBUG\" ");
+			$('#cmdSearch').click();
 		});
 
 		$("#pgNotice").on("click", function() {
-			redrawData(false, false, true, false, false);
+			$("#txtSearch").val($("#txtSearch").val() + "\"Severity\"=\"NOTICE\" ");
+			$('#cmdSearch').click();
 		});
 
 		$("#pgInfo").on("click", function() {
-			redrawData(false, true, false, false, false);
+			$("#txtSearch").val($("#txtSearch").val() + "\"Severity\"=\"INFO\" ");
+			$('#cmdSearch').click();
 		});
 
 		$("#pgWarning").on("click", function() {
-			redrawData(false, false, false, true, false);
+			$("#txtSearch").val($("#txtSearch").val() + "\"Severity\"=\"WARNING\" ");
+			$('#cmdSearch').click();
 		});
 
 		$("#pgError").on("click", function() {
-			redrawData(false, false, false, false, true);
+			$("#txtSearch").val($("#txtSearch").val() + "\"Severity\"=\"ERROR\" ");
+			$('#cmdSearch').click();
 		});
+		
     });
 
 	function getSummary() {
-		$.getJSON( "json/events_summary.php", function( data ) {
+		$.getJSON( "json/events_summary.php?" + "search=" + encodeURIComponent($("#txtSearch").val()), function( data ) {
 			var items = [];
-			
-			$("#debugmessages").empty();
-
-			/*
-			$( "<div>", {
-				"class": "my-new-list",
-				html: JSON.stringify(data)
-			}).appendTo( "#debugmessages" );
-			*/
 			
 			var items = data.length;
 			var sum = 0;
@@ -137,38 +207,38 @@
 			{
 				switch(data[x][0])
 				{
-				/*
-					case 0: { $("#pgDebug").attr("style", "width: " + data[x][1]/sum + "%"); }
-					case 1: { $("#pgDebug").attr("style", "width: " + data[x][1]/sum + "%"); }
-					case 2: { $("#pgDebug").attr("style", "width: " + data[x][1]/sum + "%"); }
-				*/
-					case "3": { if($("#err").prop('checked')) { sum = sum + data[x][1]; } break; }
-					case "4": { if($("#warning").prop('checked')) { sum = sum + data[x][1]; } break; }
-					case "5": { if($("#notice").prop('checked')) { sum = sum + data[x][1]; } break; }
-					case "6": { if($("#info").prop('checked')) { sum = sum + data[x][1]; } break; }
-					case "7": { if($("#debug").prop('checked')) { sum = sum + data[x][1]; } break; }
+					case "3": { sum = sum + data[x][1]; break; }
+					case "4": { sum = sum + data[x][1]; break; }
+					case "5": { sum = sum + data[x][1]; break; }
+					case "6": { sum = sum + data[x][1]; break; }
+					case "7": { sum = sum + data[x][1]; break; }
 				}
-			
-			
-				//sum = sum + data[x][1];
 			}
+			
+			var three = false;
+			var four = false;
+			var five = false;
+			var six = false;
+			var seven = false;
 			
 			for(var x = 0; x < items; x++)
 			{
 				switch(data[x][0])
 				{
-				/*
-					case 0: { $("#pgDebug").attr("style", "width: " + data[x][1]/sum + "%"); }
-					case 1: { $("#pgDebug").attr("style", "width: " + data[x][1]/sum + "%"); }
-					case 2: { $("#pgDebug").attr("style", "width: " + data[x][1]/sum + "%"); }
-				*/
-					case "3": { if($("#err").prop('checked')) { $("#pgError").css('width', ((data[x][1]/sum) * 100) + "%"); } else { $("#pgError").css('width', "0%"); } break; }
-					case "4": { if($("#warning").prop('checked')) { $("#pgWarning").css('width', ((data[x][1]/sum) * 100) + "%"); } else { $("#pgWarning").css('width', "0%"); } break; }
-					case "5": { if($("#notice").prop('checked')) { $("#pgNotice").css('width', ((data[x][1]/sum) * 100) + "%"); } else { $("#pgNotice").css('width', "0%"); } break; }
-					case "6": { if($("#info").prop('checked')) { $("#pgInfo").css('width', ((data[x][1]/sum) * 100) + "%"); } else { $("#pgInfo").css('width', "0%"); } break; }
-					case "7": { if($("#debug").prop('checked')) { $("#pgDebug").css('width', ((data[x][1]/sum) * 100) + "%"); } else { $("#pgDebug").css('width', "0%"); } break; }
+					case "3": { $("#pgError").css('width', ((data[x][1]/sum) * 100) + "%"); three = true; break; }
+					case "4": { $("#pgWarning").css('width', ((data[x][1]/sum) * 100) + "%"); four = true; break; }
+					case "5": { $("#pgNotice").css('width', ((data[x][1]/sum) * 100) + "%"); five = true; break; }
+					case "6": { $("#pgInfo").css('width', ((data[x][1]/sum) * 100) + "%"); six = true; break; }
+					case "7": { $("#pgDebug").css('width', ((data[x][1]/sum) * 100) + "%"); seven = true; break; }
 				}
 			}
+			
+			if( three == false ) { $("#pgError").css('width', "0%"); }
+			if( four == false ) { $("#pgWarning").css('width', "0%"); }
+			if( five == false ) { $("#pgNotice").css('width', "0%"); }
+			if( six == false ) { $("#pgInfo").css('width', "0%"); }
+			if( seven == false ) { $("#pgDebug").css('width', "0%"); }
+			
 		});
 	}
 	
@@ -209,7 +279,12 @@
 	
 	function MessageFormat(value)
 	{
-		return "<a class='myselector' href='#' data-toggle='tooltip' data-title='" + value + "'>" + value + "</a>";
+		return value;
+	}
+	
+	function LargeMessageFormat(value)
+	{
+		return "<span class='largemessage'>" + value + "</span>";
 	}
 
 	function FacilityFormat(value)
@@ -241,14 +316,13 @@
 			case "22": { return "LOCAL6"; break; }
 			case "23": { return "LOCAL7"; break; }
 		}
-		//if(value == "0") return "KERNEL"; 
-		//else return value;
 	}
+	
 	</script>
   
  <body>
  
-<div style="width:80%; margin: 0 auto; display: block">
+<div style="width:90%; margin: 0 auto; display: block">
 <nav class="navbar navbar-default" role="navigation">
   <div class="container-fluid">
     <!-- Brand and toggle get grouped for better mobile display -->
@@ -284,7 +358,7 @@
 	  </ul>
       <form class="navbar-form navbar-left" role="search">
         <div class="form-group">
-          <input type="text" class="form-control input-widesearch" placeholder="Search">
+          <input id="txtSearch" type="text" class="form-control input-widesearch" placeholder="Search" style="width: 500px">
         </div>
         <button id="cmdSearch" type="submit" class="btn btn-default">Search</button>
         <button id="cmdReset" type="submit" class="btn btn-default">Reset</button>
@@ -316,6 +390,35 @@
   </div>
 </div>
 
+<!-- Modal -->
+<div class="modal" id="mdEventDetails" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title" id="mdEventDetailsLabel">Modal title</h4>
+      </div>
+      <div class="modal-body">
+        ...
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="contextMenu" class="modal dropdown clearfix">
+    <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu" style="display:block;position:static;margin-bottom:5px;">
+      <li><a tabindex="-1" href="#">Details</a></li>
+      <li><a tabindex="-1" href="#">Add to filter</a></li>
+      <!--<li><a tabindex="-1" href="#">Something else here</a></li>
+      <li class="divider"></li>
+      <li><a tabindex="-1" href="#">Separated link</a></li>-->
+    </ul>
+</div>
+
+<!--
 <div>
     <label><input id="debug" type="checkbox" checked=""><span class="label label-primary">DEBUG</span></label>
     <label><input id="info" type="checkbox" checked=""><span class="label label-info">INFO</span></label>
@@ -323,24 +426,24 @@
     <label><input id="warning" type="checkbox" checked=""><span class="label label-warning">WARNING</span></label>
     <label><input id="err" type="checkbox" checked=""><span class="label label-danger">ERROR</span></label>
 </div>
+-->
 
   <!-- Table class="table small-table" -->
   <table id="table-style" class="table small-table eventtable table-striped" data-toggle="table" data-url="json/events.php" data-cache="false" data-row-style="rowStyle">
 	<thead> 
-	<tr>
-		<th data-field="Priority" data-formatter="SeverityFormat">Severity</th>
-		<th data-field="DeviceReportedTime">Date</th>
-		<th data-field="Priority" data-visible="false">HiddenSeverity</th>
-		<th data-field="Facility" data-formatter="FacilityFormat">Facility</th>
-		<th data-field="FromHost">Host</th>
-		<th data-field="SysLogTag">Syslogtags</th>
-		<th data-field="processid" data-visible="false">ProcessID</th>
-		<th data-field="Messagetype" data-formatter="MessagetypeFormat">Messagetype</th>
-		<th data-field="SmallMessage" data-toggle="tooltip" data-content="Message" data-formatter="MessageFormat">Message</th>
-		<th data-field="Message" data-visible="false">Message</th>
-	</tr>
+		<tr>
+			<th data-field="Priority" data-formatter="SeverityFormat">Severity</th>
+			<th data-field="DeviceReportedTime">Date</th>
+			<th data-field="Priority" data-visible="false">HiddenSeverity</th>
+			<th data-field="Facility" data-formatter="FacilityFormat">Facility</th>
+			<th data-field="FromHost">Host</th>
+			<th data-field="SysLogTag">Syslogtag</th>
+			<th data-field="processid" data-visible="false">ProcessID</th>
+			<th data-field="Messagetype" data-formatter="MessagetypeFormat">Messagetype</th>
+			<th data-field="SmallMessage" data-toggle="tooltip" data-content="Message" data-formatter="MessageFormat">Message</th>
+			<th data-field="Message" data-visible="false" data-formatter="LargeMessageFormat">Message</th>
+		</tr>
 	</thead>
-	
   </table>
 
 </div>

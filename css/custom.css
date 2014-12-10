@@ -43,3 +43,8 @@
 	font-size	: 10px;
 	margin: 0 auto;
 }
+
+#contextMenu {
+  position: absolute;
+  display:none;
+}

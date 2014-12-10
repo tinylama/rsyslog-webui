@@ -68,7 +68,7 @@
   
  <body>
  
-<div style="width:80%; margin: 0 auto; display: block">
+<div style="width:90%; margin: 0 auto; display: block">
 	<nav class="navbar navbar-default" role="navigation">
 	  <div class="container-fluid">
 		<!-- Brand and toggle get grouped for better mobile display -->
