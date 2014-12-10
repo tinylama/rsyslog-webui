@@ -365,7 +365,16 @@
       </form>
 	  <ul class="nav navbar-nav navbar-right">
 		<!-- <li class=""><img src="images/HMS2.png" width="100px"/></li> -->
-	  </ul>
+<!--
+<nav>
+  <ul class="pager pull-right">
+    <li class="next disabled"><a href="#">Newer <span aria-hidden="true">&rarr;</span></a></li>
+	<li class="previous"><a href="#"><span aria-hidden="true">&larr;</span> Older</a></li>
+  </ul>
+</nav>
+-->
+
+		</ul>
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
 </nav>
@@ -427,7 +436,14 @@
     <label><input id="err" type="checkbox" checked=""><span class="label label-danger">ERROR</span></label>
 </div>
 -->
-
+<!--
+<nav>
+  <ul class="pager pull-right" align=right>
+	<li class="previous disabled"><a href="#"><span aria-hidden="true">&larr;</span> Older</a></li>
+    <li class="next"><a href="#">Newer <span aria-hidden="true">&rarr;</span></a></li>
+  </ul>
+</nav>
+-->
   <!-- Table class="table small-table" -->
   <table id="table-style" class="table small-table eventtable table-striped" data-toggle="table" data-url="json/events.php" data-cache="false" data-row-style="rowStyle">
 	<thead> 
@@ -445,7 +461,7 @@
 		</tr>
 	</thead>
   </table>
-
+  
 </div>
 <footer class="footer">
     <div class="container">
