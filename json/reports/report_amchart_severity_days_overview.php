@@ -48,7 +48,7 @@
 	$valueAxes = array( 'stackType' => 'regular', 'gridAlpha' => 0.7, 'position' => 'left', 'title' => 'Messages' );
 	$legendValues = array( 'equalWidths' => false, 'periodValueText' => 'total: [[value.sum]]', 'position' => 'top', 'valueAlign' => 'left', 'valueWidth' => 100 );
 	
-	$arr = array( 'type' => 'serial', 'theme' => 'none', 'pathToImages' => 'http://www.amcharts.com/lib/3/images/', 'legend' => $legendValues, 'dataProvider' => $dataProvider );
+	$arr = array( 'type' => 'serial', 'theme' => 'none', 'legend' => $legendValues, 'dataProvider' => $dataProvider );
 	
 	$arr[ "valueAxes" ] = array($valueAxes);
 	$arr[ "graphs" ] = array(array( "balloonText" => "DEBUG",
