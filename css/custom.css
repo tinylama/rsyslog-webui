@@ -44,6 +44,15 @@
 	margin: 0 auto;
 }
 
+.chartdiv_small {
+	font-family : sans-serif;
+	width		: 45%;
+	height		: 400px;
+	font-size	: 10px;
+	margin: 0 auto;
+	float: left;
+}
+
 #contextMenu {
   position: absolute;
   display:none;

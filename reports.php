@@ -49,6 +49,10 @@
 			var chart = AmCharts.makeChart("chartdiv2", series);
 		}
 
+		function onDataReceivedSeverityDaysOverview(series) {
+			var chart = AmCharts.makeChart("chartdiv_days", series);
+		}
+
 		$.ajax({
 			url: "json/reports/report_amchart_severity_overview.php",
 			type: "GET",
@@ -61,6 +65,13 @@
 			type: "GET",
 			dataType: "json",
 			success: onDataReceivedSeverityOverviewPie
+		});
+		
+		$.ajax({
+			url: "json/reports/report_amchart_severity_days_overview.php",
+			type: "GET",
+			dataType: "json",
+			success: onDataReceivedSeverityDaysOverview
 		});
 	}
 	
@@ -107,8 +118,9 @@
 	</nav>
 		
 	<div id="debug"></div>
-	<div id="chartdiv" class="chartdiv"></div>
 	<div id="chartdiv2" class="chartdiv" style="height:400px;"></div>
+	<div id="chartdiv_days" class="chartdiv_small"></div>
+	<div id="chartdiv" class="chartdiv_small"></div>
 
 </div>
 <footer class="footer">

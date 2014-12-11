@@ -55,7 +55,7 @@
 		var menu = "", menudate = "";
 		
 		$('#table-style').css( 'cursor', 'pointer' );
-		
+
 		$("#table-style").delegate("tr td", "mousedown", function(event) {
 			if(event.which == 3){
 			
@@ -77,19 +77,21 @@
 				if( selectedRow.index() == 2 ) selectedColumn = "Facility";
 				if( selectedRow.index() == 3 ) selectedColumn = "Host";
 				if( selectedRow.index() == 4 ) selectedColumn = "Syslogtag";
-				if( selectedRow.index() == 5 ) selectedColumn = "Messagetype";
+				if( selectedRow.index() == 5 ) return;
 				
 				menudate = [{
 				text: 'Add logs newer than \'' + selectedNodeText + '\' to filterset',
 				action: function () {
 						$("#txtSearch").val($("#txtSearch").val() + "\"" + selectedColumn + "\">\"" + selectedNodeText + "\" ");
 						$('#cmdSearch').click();
+						context.destroy();
 					}
 				}, {
 					text: 'Add logs older than \'' + selectedNodeText + '\' in filterset',
 					action: function (t) {
 						$("#txtSearch").val($("#txtSearch").val() + "\"" + selectedColumn + "\"<\"" + selectedNodeText + "\" ");
 						$('#cmdSearch').click();
+						context.destroy();
 					}
 				}];
 				
@@ -98,12 +100,14 @@
 				action: function () {
 						$("#txtSearch").val($("#txtSearch").val() + "\"" + selectedColumn + "\"=\"" + selectedNodeText + "\" ");
 						$('#cmdSearch').click();
+						context.destroy();
 					}
 				}, {
 					text: 'Exclude \'' + selectedNodeText + '\' in filterset',
 					action: function (t) {
 						$("#txtSearch").val($("#txtSearch").val() + "\"" + selectedColumn + "\"<>\"" + selectedNodeText + "\" ");
 						$('#cmdSearch').click();
+						context.destroy();
 					}
 				}];
 				
@@ -114,6 +118,8 @@
 		}); 
 	
 		$('#table-style').on('click-row.bs.table', function (e, row, $element) {
+			context.destroy($("table-style tr"));
+			
 			var modal = $('#mdEventDetails');
 			modal.find('.modal-title').text("Log details");
 			modal.find('.modal-body').text(replaceAll('\n', '<br/>', row.Message));
