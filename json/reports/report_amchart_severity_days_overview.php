@@ -88,7 +88,7 @@
 	$arr[ "marginTop" ] = 10;
 	$arr[ "marginLeft" ] = 0;
 	$arr[ "marginBottom" ] = 0;
-	$arr[ "chartScrollbar" ] = array();
+	//$arr[ "chartScrollbar" ] = array();
 	$arr[ "chartCursor" ] = array( 'cursor' => 0 );
 	$arr[ "categoryField" ] = "Date";
 	$arr[ "categoryAxis" ] = array( 'startOnAxis' => true, 'axisColor' => '#DADADA', 'gridAlpha' => 0.07, 'guides' => array() );
