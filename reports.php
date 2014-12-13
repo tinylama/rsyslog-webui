@@ -118,8 +118,8 @@
 	</nav>
 		
 	<div id="debug"></div>
-	<div id="chartdiv2" class="chartdiv" style="height:400px;"></div>
-	<div id="chartdiv_days" class="chartdiv_small"></div>
+	<div id="chartdiv_days" class="chartdiv"></div>
+	<div id="chartdiv2" class="chartdiv_small" style="height:400px;"></div>
 	<div id="chartdiv" class="chartdiv_small"></div>
 
 </div>

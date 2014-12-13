@@ -2,32 +2,18 @@
 	include '../../config.php';
 	
 	header('Content-Type: application/json');
+
+	$db = new PDO( "mysql:host=$mysql_server;dbname=$mysql_database;charset=utf8", $mysql_user, $mysql_password );
 	
-	function makeJSONArray($value)
-	{
-		$indexedOnly = array();
-		$indexedOnly[] = array($value);
-		return $indexedOnly;
-	}
-
-	$wherestring = "";
-	if($_GET["info"] == "0") { $wherestring = " WHERE Priority != 6 "; }
-	if($_GET["notice"] == "0") { if($wherestring == "" ) { $wherestring = " WHERE Priority != 5 "; } else { $wherestring = $wherestring."AND Priority != 5 "; } }
-	if($_GET["debug"] == "0") { if($wherestring == "" ) { $wherestring = " WHERE Priority != 7 "; } else { $wherestring = $wherestring."AND Priority != 7 "; } }
-	if($_GET["err"] == "0") { if($wherestring == "" ) { $wherestring = " WHERE Priority != 3 "; } else { $wherestring = $wherestring."AND Priority != 3 "; } }
-	if($_GET["warning"] == "0") { if($wherestring == "" ) { $wherestring = " WHERE Priority != 4 "; } else { $wherestring = $wherestring."AND Priority != 4 "; } }
-
-	$mysqli = new mysqli($mysql_server, $mysql_user, $mysql_password, $mysql_database);
-	if ($mysqli->connect_errno) {
-		echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
-	}
-	
-	$sth = $mysqli->query("SELECT Priority, COUNT(ID) AS Qty FROM rsyslogdb.SystemEvents GROUP BY Priority ORDER BY Priority ASC");
-
 	$items = array();
 	$dataProvider = array();
 	$i = 0;
-	while( $row = mysqli_fetch_assoc($sth) ) {
+	
+	$stmt = $db->prepare("SELECT Priority, COUNT(ID) AS Qty FROM rsyslogdb.SystemEvents GROUP BY Priority ORDER BY Priority DESC");
+
+	if( $stmt->execute() )
+	foreach( $stmt as $row ) {
+	//while( $row = mysqli_fetch_assoc($sth) ) {
 		
 		$prio = "";
 		
@@ -49,6 +35,8 @@
 	$arr[ "titleField" ] = "Severity";
 	$arr[ "colorField" ] = "color";
 	$arr[ "balloonText" ] = "[[title]]<br><span style='font-size:14px'><b>[[value]]</b> ([[percents]]%)</span>";
+	$arr[ "exportConfig" ] = array( 'menuItems' => array( array( 'icon' => '../../images/export.png', 'format' => 'png' ) ) );
+
 
 	echo json_encode($arr);
 

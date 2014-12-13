@@ -3,12 +3,7 @@
 	
 	header('Content-Type: application/json');
 
-	$mysqli = new mysqli($mysql_server, $mysql_user, $mysql_password, $mysql_database);
-	if ($mysqli->connect_errno) {
-		echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
-	}
-	
-	$sth = $mysqli->query('SELECT Priority, DATE_FORMAT(DeviceReportedTime,\'%Y-%m-%d\') AS Date, count(ID) AS Qty FROM SystemEvents GROUP BY Date, Priority');
+	$db = new PDO( "mysql:host=$mysql_server;dbname=$mysql_database;charset=utf8", $mysql_user, $mysql_password );
 
 	$items = array();
 	$dataProvider = array();
@@ -16,7 +11,10 @@
 	$i = 0;
 	$date = "";
 	
-	while( $row = mysqli_fetch_assoc($sth) ) {
+	$stmt = $db->prepare('SELECT Priority, DATE_FORMAT(DeviceReportedTime,\'%Y-%m-%d\') AS Date, count(ID) AS Qty FROM SystemEvents GROUP BY Date, Priority');
+
+	if( $stmt->execute() )
+	foreach( $stmt as $row ) {
 		
 		$prio = "";
 		
@@ -32,6 +30,7 @@
 		if( $date == $row["Date"] ) 
 		{
 			$dateentry[ $prio ] = intval( $row[ 'Qty' ] );
+			$dateentry[ "c".$prio ] = $color;
 		}
 		else
 		{
@@ -39,7 +38,7 @@
 				array_push( $dataProvider, $dateentry );
 			
 			$dateentry = null;
-			$dateentry = array( 'Date' => $row["Date"], $prio => intval($row["Qty"]) );
+			$dateentry = array( 'Date' => $row["Date"], $prio => intval($row["Qty"]), "c".$prio => $color );
 			$date = $row["Date"];
 		}
 		//array_push($dataProvider, array('Severity' => $prio, 'Messages' => intval($row["Qty"]), 'date' => $row["Date"]));
@@ -55,35 +54,52 @@
 		"fillAlphas" => 0.8,
 		"lineAlpha" => 0.4,
 		"title" => "DEBUG",
-		"valueField" => "DEBUG" ), array( "balloonText" => "INFO",
+		"labelColorField" => 'cDEBUG',
+		"valueField" => "DEBUG",
+		"colorField" => "cDEBUG", 
+		"fillColorsField" => "cDEBUG" ), array( "balloonText" => "INFO",
 		"fillAlphas" => 0.8,
 		"lineAlpha" => 0.4,
 		"title" => "INFO",
-		"valueField" => "INFO" ), array( "balloonText" => "NOTICE",
+		"valueField" => "INFO",
+		"colorField" => "cINFO", 
+		"fillColorsField" => "cINFO" ), array( "balloonText" => "NOTICE",
 		"fillAlphas" => 0.8,
 		"lineAlpha" => 0.4,
 		"title" => "NOTICE",
-		"valueField" => "NOTICE" ), array( "balloonText" => "WARNING",
+		"valueField" => "NOTICE",
+		"colorField" => "cNOTICE", 
+		"fillColorsField" => "cNOTICE" ), array( "balloonText" => "WARNING",
 		"fillAlphas" => 0.8,
 		"lineAlpha" => 0.4,
 		"title" => "WARNING",
-		"valueField" => "WARNING" ), array( "balloonText" => "ERROR",
+		"valueField" => "WARNING",
+		"colorField" => "cWARNING", 
+		"fillColorsField" => "cWARNING" ), array( "balloonText" => "ERROR",
 		"fillAlphas" => 0.8,
 		"lineAlpha" => 0.4,
 		"title" => "ERROR",
-		"valueField" => "ERROR" ), array( "balloonText" => "CRITICAL",
+		"valueField" => "ERROR",
+		"colorField" => "cERROR", 
+		"fillColorsField" => "cERROR" ), array( "balloonText" => "CRITICAL",
 		"fillAlphas" => 0.8,
 		"lineAlpha" => 0.4,
 		"title" => "CRITICAL",
-		"valueField" => "CRITICAL" ), array( "balloonText" => "ALERT",
+		"valueField" => "CRITICAL",
+		"colorField" => "cCRITICAL", 
+		"fillColorsField" => "cCRITICAL" ), array( "balloonText" => "ALERT",
 		"fillAlphas" => 0.8,
 		"lineAlpha" => 0.4,
 		"title" => "ALERT",
-		"valueField" => "ALERT" ), array( "balloonText" => "EMERGENCY",
+		"valueField" => "ALERT",
+		"colorField" => "cALERT", 
+		"fillColorsField" => "cALERT" ), array( "balloonText" => "EMERGENCY",
 		"fillAlphas" => 0.8,
 		"lineAlpha" => 0.4,
 		"title" => "EMERGENCY",
-		"valueField" => "EMERGENCY" ));
+		"valueField" => "EMERGENCY",
+		"colorField" => "cEMERGENCY", 
+		"fillColorsField" => "cEMERGENCY" ));
 	$arr[ "plotAreaBorderAlpha" ] = 0;
 	$arr[ "marginTop" ] = 10;
 	$arr[ "marginLeft" ] = 0;
@@ -92,7 +108,8 @@
 	$arr[ "chartCursor" ] = array( 'cursor' => 0 );
 	$arr[ "categoryField" ] = "Date";
 	$arr[ "categoryAxis" ] = array( 'startOnAxis' => true, 'axisColor' => '#DADADA', 'gridAlpha' => 0.07, 'guides' => array() );
-
+	$arr[ "exportConfig" ] = array( 'menuTop' => '10px', 'menuRight' => '10px', 'menuItems' => array( array( 'icon' => '../../images/export.png', 'format' => 'png' ) ) );
+	
 	echo json_encode($arr);
 
 ?>
