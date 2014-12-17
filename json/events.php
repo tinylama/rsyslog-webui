@@ -51,7 +51,7 @@
 				if( $keyvalue == "NETWORK" ) { $keyvalue = "7"; }
 				if( $keyvalue == "UUCP" ) { $keyvalue = "8"; }
 				if( $keyvalue == "CRON" ) { $keyvalue = "9"; }
-				if( $keyvalue == "AUTH-MESSAGE" ) { $keyvalue = "10"; }
+				if( $keyvalue == "AUTH-MESSAGE-10" ) { $keyvalue = "10"; }
 				if( $keyvalue == "FTP" ) { $keyvalue = "11"; }
 				if( $keyvalue == "NTP" ) { $keyvalue = "12"; }
 				if( $keyvalue == "LOG-AUDIT" ) { $keyvalue = "13"; }
