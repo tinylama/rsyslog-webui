@@ -118,15 +118,20 @@
 		}); 
 	
 		$('#table-style').on('click-row.bs.table', function (e, row, $element) {
-			context.destroy($("table-style tr"));
 			
-			var modal = $('#mdEventDetails');
-			modal.find('.modal-title').text("Log details");
-			modal.find('.modal-body').text(replaceAll('\n', '<br/>', row.Message));
-
-			$('#mdEventDetails').modal({
-				keyboard: false
-			});
+			if( $element.hasClass('expandedMessage') == false)
+			{
+				// Add new tr with full message + add class
+				$element.after('<tr><td colspan="7">' + row.Message + '</td></tr>');
+				$element.addClass('expandedMessage');
+			}
+			else
+			{
+				// Remove previous created tr + remove class
+				$element.closest('tr').next().remove();
+				$element.removeClass('expandedMessage');
+				
+			}
 		});
 
 		$('[data-toggle="tooltip"]').tooltip({
