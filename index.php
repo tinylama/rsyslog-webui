@@ -39,6 +39,8 @@
 	
 	$(function () {
 		
+		var firstRowID, lastRowID;
+		
 		getSummary();
 		
 		var selectedRow = "";
@@ -58,17 +60,18 @@
 
 		$("#table-style").delegate("tr td", "mousedown", function(event) {
 			if(event.which == 3){
-			
-				context.destroy($("table-style tr"));
+				
+				context.destroy();
+				//context.destroy($("table-style tr"));
 
-				selectedRow = $(this);
+				var selectedRow = $(this);
 				selectedNodeText = selectedRow.html();
 				selectedColumn = "";
 				
 				if(selectedRow.find('span').length > 0) selectedNodeText = selectedRow.find('span').html();
 
 				if( selectedRow.index() == 6 ) return;
-				if( selectedRow.index() == 0 ) selectedColumn = "Severity";
+				if( selectedRow.index() == 0 && selectedRow.hasClass('expandedMessage') == false ) selectedColumn = "Severity";
 				if( selectedRow.index() == 1 ) 
 				{
 					selectedNodeText = selectedNodeText.replace( " ", "T" );
@@ -78,6 +81,7 @@
 				if( selectedRow.index() == 3 ) selectedColumn = "Host";
 				if( selectedRow.index() == 4 ) selectedColumn = "Syslogtag";
 				if( selectedRow.index() == 5 ) return;
+				if( selectedRow.hasClass('expandedMessage') == true ) return;
 				
 				menudate = [{
 				text: 'Add logs newer than \'' + selectedNodeText + '\' to filterset',
@@ -111,18 +115,20 @@
 					}
 				}];
 				
-				if( selectedRow.index() == 1 ) context.attach($("table-style tr"), menudate);
+				if( selectedRow.index() == 1 ) 
+					context.attach($("table-style tr"), menudate);
 				else
 					context.attach($("table-style tr"), menu);
 			}
 		}); 
 	
 		$('#table-style').on('click-row.bs.table', function (e, row, $element) {
+			//console.log( JSON.stringify( row ) );
 			
 			if( $element.hasClass('expandedMessage') == false)
 			{
 				// Add new tr with full message + add class
-				$element.after('<tr><td colspan="7">' + row.Message + '</td></tr>');
+				$element.after('<tr><td colspan="7" class="expandedMessage">' + row.Message + '</td></tr>');
 				$element.addClass('expandedMessage');
 			}
 			else
@@ -138,44 +144,6 @@
 			'placement': 'top',  
 			'trigger': 'hover focus'
 		});
-
-		/*
-        $('#info, #debug, #notice, #warning, #err').click(function () {
-            var classes = 'table table-hover small-table table-striped';
-			
-			getSummary();
-			
-            $('#table-style').bootstrapTable('destroy')
-			.bootstrapTable({
-				classes: classes,
-				url: 'json/events.php?warning=' + toInt($('#warning').prop('checked')) + '&info=' + toInt($('#info').prop('checked'))
-				 + '&debug=' + toInt($('#debug').prop('checked')) + '&err=' + toInt($('#err').prop('checked'))
-				 + '&notice=' + toInt($('#notice').prop('checked'))
-			});
-		});
-		*/
-		/*		
-		function redrawData(bDebug, bInfo, bNotice, bWarning, bError)
-		{
-			$('#debug').prop('checked', bDebug);
-			$('#info').prop('checked', bInfo);
-			$('#notice').prop('checked', bNotice);
-			$('#warning').prop('checked', bWarning);
-			$('#err').prop('checked', bError);
-			
-			//getSummary();
-			
-			var classes = 'table table-hover small-table table-striped';
-			
-			$('#table-style').bootstrapTable('destroy')
-				.bootstrapTable({
-					classes: classes,
-					url: 'json/events.php?warning=' + toInt($('#warning').prop('checked')) + '&info=' + toInt($('#info').prop('checked'))
-					 + '&debug=' + toInt($('#debug').prop('checked')) + '&err=' + toInt($('#err').prop('checked'))
-					 + '&notice=' + toInt($('#notice').prop('checked'))
-				});
-		}
-		*/
 		
 		$('#cmdSearch').click(function(e) {
 			var classes = 'table table-hover small-table table-striped';
@@ -278,16 +246,9 @@
 	}
 	
 	function rowStyle(row, index) {
-
-		return {};
-		var classes = ['active', 'success', 'info', 'warning', 'danger'];
-		
-        if (index % 2 === 0 && index / 2 < classes.length) {
-            return {
-                class: classes[index / 2]
-            };
-        } 
-        return { classes: "warning" };
+		return {
+			classes: 'ID_' + row.ID
+		};
     }
 	
 	function SeverityFormat(value)
@@ -313,6 +274,12 @@
 		return value;
 	}
 	
+	function idFormat(value, row)
+	{
+		console.log( row + ": " + value );
+		return value;
+	}
+
 	function LargeMessageFormat(value)
 	{
 		return "<span class='largemessage'>" + value + "</span>";
@@ -377,21 +344,11 @@
         <div class="form-group">
           <input id="txtSearch" type="text" class="form-control input-widesearch" placeholder="Search" style="width: 500px">
         </div>
-        <button id="cmdSearch" type="submit" class="btn btn-default">Search</button>
+        <button id="cmdSearch" type="submit" class="btn btn-default"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span></button>
         <button id="cmdReset" type="submit" class="btn btn-default">Reset</button>
       </form>
 	  <ul class="nav navbar-nav navbar-right">
-		<!-- <li class=""><img src="images/HMS2.png" width="100px"/></li> -->
-<!--
-<nav>
-  <ul class="pager pull-right">
-    <li class="next disabled"><a href="#">Newer <span aria-hidden="true">&rarr;</span></a></li>
-	<li class="previous"><a href="#"><span aria-hidden="true">&larr;</span> Older</a></li>
-  </ul>
-</nav>
--->
-
-		</ul>
+	  </ul>
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
 </nav>
@@ -434,37 +391,11 @@
   </div>
 </div>
 
-<div id="contextMenu" class="modal dropdown clearfix">
-    <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu" style="display:block;position:static;margin-bottom:5px;">
-      <li><a tabindex="-1" href="#">Details</a></li>
-      <li><a tabindex="-1" href="#">Add to filter</a></li>
-      <!--<li><a tabindex="-1" href="#">Something else here</a></li>
-      <li class="divider"></li>
-      <li><a tabindex="-1" href="#">Separated link</a></li>-->
-    </ul>
-</div>
-
-<!--
-<div>
-    <label><input id="debug" type="checkbox" checked=""><span class="label label-primary">DEBUG</span></label>
-    <label><input id="info" type="checkbox" checked=""><span class="label label-info">INFO</span></label>
-    <label><input id="notice" type="checkbox" checked=""><span class="label label-success">NOTICE</span></label>
-    <label><input id="warning" type="checkbox" checked=""><span class="label label-warning">WARNING</span></label>
-    <label><input id="err" type="checkbox" checked=""><span class="label label-danger">ERROR</span></label>
-</div>
--->
-<!--
-<nav>
-  <ul class="pager pull-right" align=right>
-	<li class="previous disabled"><a href="#"><span aria-hidden="true">&larr;</span> Older</a></li>
-    <li class="next"><a href="#">Newer <span aria-hidden="true">&rarr;</span></a></li>
-  </ul>
-</nav>
--->
   <!-- Table class="table small-table" -->
-  <table id="table-style" class="table small-table eventtable table-striped" data-toggle="table" data-url="json/events.php" data-cache="false" data-row-style="rowStyle">
+  <table id="table-style" class="table small-table table-striped" data-toggle="table" data-url="json/events.php" data-height="800" data-pagination="true" data-page-size="100">
 	<thead> 
 		<tr>
+			<th data-field="ID" data-visible="false" data-formatter="idFormat">Id</th>
 			<th data-field="Priority" data-formatter="SeverityFormat">Severity</th>
 			<th data-field="DeviceReportedTime">Date</th>
 			<th data-field="Priority" data-visible="false">HiddenSeverity</th>
