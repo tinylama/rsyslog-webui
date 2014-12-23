@@ -84,7 +84,11 @@
 			if( $keyname == "Syslogtag" ) $keyname = "SysLogTag";
 			if( $keyname == "Messagetype" ) $keyname = "Messagetype";
 			
+			if( $expression != "=" && $expression != "<>" && $expression != "<" && $expression != ">" )
+				exit();
+			
 			if( $expression == "=" ) $expression = "LIKE";
+			
 			
 			$qArray[ "param".strval( $x ) ] = $keyvalue; 
 			
