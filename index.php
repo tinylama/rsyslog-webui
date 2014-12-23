@@ -396,12 +396,12 @@
 	<thead> 
 		<tr>
 			<th data-field="ID" data-visible="false" data-formatter="idFormat">Id</th>
-			<th data-field="Priority" data-formatter="SeverityFormat">Severity</th>
-			<th data-field="DeviceReportedTime">Date</th>
+			<th data-field="Priority" data-formatter="SeverityFormat" data-sortable="true">Severity</th>
+			<th data-field="DeviceReportedTime" data-sortable="true" data-order="desc">Date</th>
 			<th data-field="Priority" data-visible="false">HiddenSeverity</th>
-			<th data-field="Facility" data-formatter="FacilityFormat">Facility</th>
-			<th data-field="FromHost">Host</th>
-			<th data-field="SysLogTag">Syslogtag</th>
+			<th data-field="Facility" data-formatter="FacilityFormat" data-sortable="true">Facility</th>
+			<th data-field="FromHost" data-sortable="true">Host</th>
+			<th data-field="SysLogTag" data-sortable="true">Syslogtag</th>
 			<th data-field="processid" data-visible="false">ProcessID</th>
 			<th data-field="Messagetype" data-formatter="MessagetypeFormat">Messagetype</th>
 			<th data-field="SmallMessage" data-toggle="tooltip" data-content="Message" data-formatter="MessageFormat">Message</th>

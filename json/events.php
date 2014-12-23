@@ -98,7 +98,7 @@
 	$db = new PDO( "mysql:host=$mysql_server;dbname=$mysql_database;charset=utf8", $mysql_user, $mysql_password );
 
 	$rows = array();
-	$stmt = $db->prepare($query . $wherestring . " ORDER BY ID DESC LIMIT 1000");
+	$stmt = $db->prepare($query . $wherestring . " ORDER BY ID DESC LIMIT 2000");
 
 	if( $stmt->execute( $qArray ) )
 	foreach( $stmt as $row ) {
