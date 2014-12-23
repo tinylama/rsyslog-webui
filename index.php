@@ -13,7 +13,7 @@
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/bootstrap-table.min.css" rel="stylesheet">
     <link href="css/bootstrap-tooltip.css" rel="stylesheet">
-    <link href="css/bootstrap-context.css" rel="stylesheet">
+	<link href="css/bootstrap-context.css" rel="stylesheet"> 
     <link href="css/custom.css" rel="stylesheet">   
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
@@ -30,12 +30,8 @@
     <script src="js/bootstrap.min.js"></script>
     <script src="js/bootstrap-table.min.js"></script>
 	<script src="js/bootstrap-tooltip.js"></script>
-	<script src="js/bootstrap-context.js"></script>
+	<script src="js/bootstrap-context.js"></script> 
   	<script type="text/javascript">
-	
-	function replaceAll(find, replace, str) {
-		return str.replace(new RegExp(find, 'g'), replace);
-	}
 	
 	$(function () {
 		
@@ -45,7 +41,7 @@
 		
 		var selectedRow = "";
 		var selectedNodeText = "";
-		
+
 		context.init({
 			fadeSpeed: 100,
 			filter: function ($obj){},
@@ -53,7 +49,7 @@
 			preventDoubleContext: true,
 			compress: false
 		});
-		
+
 		var menu = "", menudate = "";
 		
 		$('#table-style').css( 'cursor', 'pointer' );
@@ -128,7 +124,7 @@
 			if( $element.hasClass('expandedMessage') == false)
 			{
 				// Add new tr with full message + add class
-				$element.after('<tr><td colspan="7" class="expandedMessage">' + row.Message + '</td></tr>');
+				$element.after('<tr><td colspan="7" class="expandedMessage"><div class="increase-font-size">' + row.Message + '</div></td></tr>');
 				$element.addClass('expandedMessage');
 			}
 			else
