@@ -12,6 +12,7 @@
     <!-- Bootstrap -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/bootstrap-table.min.css" rel="stylesheet">
+    <link href="css/bootstrap-tooltip.css" rel="stylesheet">
     <link href="css/custom.css" rel="stylesheet">   
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
@@ -25,13 +26,17 @@
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
     <!-- Include all compiled plugins (below), or include individual files as needed -->
-    <script language="javascript" type="text/javascript" src="chart-api/flot/jquery.flot.min.js"></script>
-    <script language="javascript" type="text/javascript" src="chart-api/flot/jquery.flot.categories.min.js"></script>
+	<script src="js/bootstrap-tooltip.js"></script>
 	<script type="text/javascript" src="chart-api/amcharts/amcharts/amcharts.js"></script>
 	<script type="text/javascript" src="chart-api/amcharts/amcharts/pie.js"></script>
 	<script type="text/javascript" src="chart-api/amcharts/amcharts/serial.js"></script>
   	<script type="text/javascript">
 	$(function () {	
+		
+		$('[data-toggle="tooltip-bottom"]').tooltip({
+			'placement': 'bottom',  
+			'trigger': 'hover focus'
+		});
 		
 		ShowAmchartSeverityOverview();
 		
@@ -96,8 +101,8 @@
 		<!-- Collect the nav links, forms, and other content for toggling -->
 		<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
 		  <ul class="nav navbar-nav">
-			<li id="cmdEvents" class="events"><a href="index.php">Events <span class="sr-only">(current)</span></a></li>
-			<li id="cmdReports" class="active reports"><a href="#">Reports</a></li>
+			<li id="cmdEvents" class="events" data-toggle="tooltip-bottom" title="Events"><a href="index.php"><span class="glyphicon glyphicon-home" aria-hidden="true"></span></a></li>
+			<li id="cmdReports" class="active reports"><a href="#" data-toggle="tooltip-bottom" title="Reports"><span class="glyphicon glyphicon-dashboard" aria-hidden="true"></span></a></li>
 		  <!--  
 			<li class="dropdown">
 			  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Dropdown <span class="caret"></span></a>

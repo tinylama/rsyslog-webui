@@ -136,12 +136,16 @@
 				// Remove previous created tr + remove class
 				$element.closest('tr').next().remove();
 				$element.removeClass('expandedMessage');
-				
 			}
 		});
 
 		$('[data-toggle="tooltip"]').tooltip({
 			'placement': 'top',  
+			'trigger': 'hover focus'
+		});
+
+		$('[data-toggle="tooltip-bottom"]').tooltip({
+			'placement': 'bottom',  
 			'trigger': 'hover focus'
 		});
 		
@@ -337,18 +341,20 @@
     <!-- Collect the nav links, forms, and other content for toggling -->
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
       <ul class="nav navbar-nav">
-        <li id="cmdEvents" class="active events"><a href="#">Events <span class="sr-only">(current)</span></a></li>
-        <li id="cmdReports" class="reports"><a href="reports.php">Reports</a></li>
+        <li id="cmdEvents" class="active events" data-toggle="tooltip-bottom" title="Events"><a href="#"><span class="glyphicon glyphicon-home" aria-hidden="true"></span></a></li>
+        <li id="cmdReports" class="reports"><a href="reports.php" data-toggle="tooltip-bottom" title="Reports"><span class="glyphicon glyphicon-dashboard" aria-hidden="true"></span></a></li>
 	  </ul>
       <form class="navbar-form navbar-left" role="search">
         <div class="form-group">
           <input id="txtSearch" type="text" class="form-control input-widesearch" placeholder="Search" style="width: 500px">
         </div>
-        <button id="cmdSearch" type="submit" class="btn btn-default"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span></button>
-        <button id="cmdReset" type="submit" class="btn btn-default">Reset</button>
+        <button id="cmdSearch" type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Refresh"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span></button>
+        <button id="cmdReset" type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Reset all">Reset</button>
       </form>
-	  <ul class="nav navbar-nav navbar-right">
-	  </ul>
+      <form class="navbar-form navbar-right" role="search">
+        <button type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Settings"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>
+        <button type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Log out"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span></button>
+      </form>
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
 </nav>
