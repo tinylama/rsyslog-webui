@@ -61,3 +61,5 @@
   position: absolute;
   display:none;
 }
+
+body { padding-top: 20px; }
