@@ -352,8 +352,8 @@
         <button id="cmdReset" type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Reset all">Reset</button>
       </form>
       <form class="navbar-form navbar-right" role="search">
-        <button type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Settings"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>
-        <button type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Log out"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span></button>
+        <button type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Settings (not implemented yet)"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>
+        <button type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Log out (not implemented yet)"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span></button>
       </form>
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
