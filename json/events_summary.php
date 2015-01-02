@@ -5,8 +5,7 @@
 
 	$searchstring = $_GET["search"];
 
-	$query = "SELECT Priority, COUNT(ID) AS Qty FROM rsyslogdb.SystemEvents ";
-	
+	$query = "SELECT Priority, COUNT(ID) AS Qty FROM ";
 	$qArray = array();
 
 	if( $searchstring != "" )
@@ -101,8 +100,10 @@
 
 	$db = new PDO( "mysql:host=$mysql_server;dbname=$mysql_database;charset=utf8", $mysql_user, $mysql_password );
 
+	$table_query = "(SELECT ID, Priority FROM SystemEvents " . $wherestring . " ORDER BY ID DESC LIMIT 2000) as tmp ";
+	
 	$rows = array();
-	$stmt = $db->prepare($query . $wherestring . " GROUP BY Priority");
+	$stmt = $db->prepare($query . $table_query . " GROUP BY Priority");
 
 	if( $stmt->execute( $qArray ) )
 	foreach( $stmt as $row ) {
