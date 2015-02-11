@@ -59,21 +59,21 @@
 		}
 
 		$.ajax({
-			url: "json/reports/report_amchart_severity_overview.php",
+			url: "json/reports/cache/report_amchart_severity_overview.json",
 			type: "GET",
 			dataType: "json",
 			success: onDataReceivedSeverityOverview
 		});
 
 		$.ajax({
-			url: "json/reports/report_amchart_severity_overview_pie.php",
+			url: "json/reports/cache/report_amchart_severity_overview_pie.json",
 			type: "GET",
 			dataType: "json",
 			success: onDataReceivedSeverityOverviewPie
 		});
 		
 		$.ajax({
-			url: "json/reports/report_amchart_severity_days_overview.php",
+			url: "json/reports/cache/report_amchart_severity_days_overview.json",
 			type: "GET",
 			dataType: "json",
 			success: onDataReceivedSeverityDaysOverview
