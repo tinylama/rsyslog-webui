@@ -34,17 +34,32 @@
   font-size: 0.8em;
 }
 
+.increase-font-size {
+  font-size: 1.2em;
+}
+
 .input-widesearch { width: 600px }
 
 .chartdiv {
 	font-family : sans-serif;
-	width		: 90%;
+	width		: 100%;
 	height		: 300px;
 	font-size	: 10px;
 	margin: 0 auto;
+}
+
+.chartdiv_small {
+	font-family : sans-serif;
+	width		: 50%;
+	height		: 400px;
+	font-size	: 10px;
+	margin: 0 auto;
+	float: left;
 }
 
 #contextMenu {
   position: absolute;
   display:none;
 }
+
+body { padding-top: 20px; }

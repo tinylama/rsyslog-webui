@@ -13,7 +13,7 @@
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/bootstrap-table.min.css" rel="stylesheet">
     <link href="css/bootstrap-tooltip.css" rel="stylesheet">
-    <link href="css/bootstrap-context.css" rel="stylesheet">
+	<link href="css/bootstrap-context.css" rel="stylesheet"> 
     <link href="css/custom.css" rel="stylesheet">   
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
@@ -30,20 +30,18 @@
     <script src="js/bootstrap.min.js"></script>
     <script src="js/bootstrap-table.min.js"></script>
 	<script src="js/bootstrap-tooltip.js"></script>
-	<script src="js/bootstrap-context.js"></script>
+	<script src="js/bootstrap-context.js"></script> 
   	<script type="text/javascript">
 	
-	function replaceAll(find, replace, str) {
-		return str.replace(new RegExp(find, 'g'), replace);
-	}
-	
 	$(function () {
+		
+		var firstRowID, lastRowID;
 		
 		getSummary();
 		
 		var selectedRow = "";
 		var selectedNodeText = "";
-		
+
 		context.init({
 			fadeSpeed: 100,
 			filter: function ($obj){},
@@ -51,56 +49,90 @@
 			preventDoubleContext: true,
 			compress: false
 		});
-		
-		var menu = "";
+
+		var menu = "", menudate = "";
 		
 		$('#table-style').css( 'cursor', 'pointer' );
-		
+
 		$("#table-style").delegate("tr td", "mousedown", function(event) {
 			if(event.which == 3){
-			
-				context.destroy($("table-style tr"));
+				
+				context.destroy();
+				//context.destroy($("table-style tr"));
 
-				selectedRow = $(this);
+				var selectedRow = $(this);
 				selectedNodeText = selectedRow.html();
 				selectedColumn = "";
 				
+				if(selectedRow.find('span').length > 0) selectedNodeText = selectedRow.find('span').html();
+
 				if( selectedRow.index() == 6 ) return;
-				if( selectedRow.index() == 0 ) selectedColumn = "Severity";
-				if( selectedRow.index() == 1 ) selectedColumn = "Date";
+				if( selectedRow.index() == 0 && selectedRow.hasClass('expandedMessage') == false ) selectedColumn = "Severity";
+				if( selectedRow.index() == 1 ) 
+				{
+					selectedNodeText = selectedNodeText.replace( " ", "T" );
+					selectedColumn = "Date";
+				}
 				if( selectedRow.index() == 2 ) selectedColumn = "Facility";
 				if( selectedRow.index() == 3 ) selectedColumn = "Host";
 				if( selectedRow.index() == 4 ) selectedColumn = "Syslogtag";
-				if( selectedRow.index() == 5 ) selectedColumn = "Messagetype";
+				if( selectedRow.index() == 5 ) return;
+				if( selectedRow.hasClass('expandedMessage') == true ) return;
 				
-				if(selectedRow.find('span').length > 0) selectedNodeText = selectedRow.find('span').html();
+				menudate = [{
+				text: 'Add logs newer than \'' + selectedNodeText + '\' to filterset',
+				action: function () {
+						$("#txtSearch").val($("#txtSearch").val() + "\"" + selectedColumn + "\">\"" + selectedNodeText + "\" ");
+						$('#cmdSearch').click();
+						context.destroy();
+					}
+				}, {
+					text: 'Add logs older than \'' + selectedNodeText + '\' in filterset',
+					action: function (t) {
+						$("#txtSearch").val($("#txtSearch").val() + "\"" + selectedColumn + "\"<\"" + selectedNodeText + "\" ");
+						$('#cmdSearch').click();
+						context.destroy();
+					}
+				}];
 				
 				menu = [{
 				text: 'Add \'' + selectedNodeText + '\' to filterset',
 				action: function () {
 						$("#txtSearch").val($("#txtSearch").val() + "\"" + selectedColumn + "\"=\"" + selectedNodeText + "\" ");
 						$('#cmdSearch').click();
+						context.destroy();
 					}
 				}, {
 					text: 'Exclude \'' + selectedNodeText + '\' in filterset',
 					action: function (t) {
 						$("#txtSearch").val($("#txtSearch").val() + "\"" + selectedColumn + "\"<>\"" + selectedNodeText + "\" ");
 						$('#cmdSearch').click();
+						context.destroy();
 					}
 				}];
 				
-				context.attach($("table-style tr"), menu);
+				if( selectedRow.index() == 1 ) 
+					context.attach($("table-style tr"), menudate);
+				else
+					context.attach($("table-style tr"), menu);
 			}
 		}); 
 	
 		$('#table-style').on('click-row.bs.table', function (e, row, $element) {
-			var modal = $('#mdEventDetails');
-			modal.find('.modal-title').text("Log details");
-			modal.find('.modal-body').text(replaceAll('\n', '<br/>', row.Message));
-
-			$('#mdEventDetails').modal({
-				keyboard: false
-			});
+			//console.log( JSON.stringify( row ) );
+			
+			if( $element.hasClass('expandedMessage') == false)
+			{
+				// Add new tr with full message + add class
+				$element.after('<tr><td colspan="7" class="expandedMessage"><div class="increase-font-size">' + row.Message + '</div></td></tr>');
+				$element.addClass('expandedMessage');
+			}
+			else
+			{
+				// Remove previous created tr + remove class
+				$element.closest('tr').next().remove();
+				$element.removeClass('expandedMessage');
+			}
 		});
 
 		$('[data-toggle="tooltip"]').tooltip({
@@ -108,43 +140,10 @@
 			'trigger': 'hover focus'
 		});
 
-		/*
-        $('#info, #debug, #notice, #warning, #err').click(function () {
-            var classes = 'table table-hover small-table table-striped';
-			
-			getSummary();
-			
-            $('#table-style').bootstrapTable('destroy')
-			.bootstrapTable({
-				classes: classes,
-				url: 'json/events.php?warning=' + toInt($('#warning').prop('checked')) + '&info=' + toInt($('#info').prop('checked'))
-				 + '&debug=' + toInt($('#debug').prop('checked')) + '&err=' + toInt($('#err').prop('checked'))
-				 + '&notice=' + toInt($('#notice').prop('checked'))
-			});
+		$('[data-toggle="tooltip-bottom"]').tooltip({
+			'placement': 'bottom',  
+			'trigger': 'hover focus'
 		});
-		*/
-		/*		
-		function redrawData(bDebug, bInfo, bNotice, bWarning, bError)
-		{
-			$('#debug').prop('checked', bDebug);
-			$('#info').prop('checked', bInfo);
-			$('#notice').prop('checked', bNotice);
-			$('#warning').prop('checked', bWarning);
-			$('#err').prop('checked', bError);
-			
-			//getSummary();
-			
-			var classes = 'table table-hover small-table table-striped';
-			
-			$('#table-style').bootstrapTable('destroy')
-				.bootstrapTable({
-					classes: classes,
-					url: 'json/events.php?warning=' + toInt($('#warning').prop('checked')) + '&info=' + toInt($('#info').prop('checked'))
-					 + '&debug=' + toInt($('#debug').prop('checked')) + '&err=' + toInt($('#err').prop('checked'))
-					 + '&notice=' + toInt($('#notice').prop('checked'))
-				});
-		}
-		*/
 		
 		$('#cmdSearch').click(function(e) {
 			var classes = 'table table-hover small-table table-striped';
@@ -247,16 +246,9 @@
 	}
 	
 	function rowStyle(row, index) {
-
-		return {};
-		var classes = ['active', 'success', 'info', 'warning', 'danger'];
-		
-        if (index % 2 === 0 && index / 2 < classes.length) {
-            return {
-                class: classes[index / 2]
-            };
-        } 
-        return { classes: "warning" };
+		return {
+			classes: 'ID_' + row.ID
+		};
     }
 	
 	function SeverityFormat(value)
@@ -282,6 +274,12 @@
 		return value;
 	}
 	
+	function idFormat(value, row)
+	{
+		console.log( row + ": " + value );
+		return value;
+	}
+
 	function LargeMessageFormat(value)
 	{
 		return "<span class='largemessage'>" + value + "</span>";
@@ -301,7 +299,7 @@
 			case "7": { return "NETWORK"; break; }
 			case "8": { return "UUCP"; break; }
 			case "9": { return "CRON"; break; }
-			case "10": { return "AUTH-MESSAGE"; break; }
+			case "10": { return "AUTH-MESSAGE-10"; break; }
 			case "11": { return "FTP"; break; }
 			case "12": { return "NTP"; break; }
 			case "13": { return "LOG-AUDIT"; break; }
@@ -339,42 +337,20 @@
     <!-- Collect the nav links, forms, and other content for toggling -->
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
       <ul class="nav navbar-nav">
-        <li id="cmdEvents" class="active events"><a href="#">Events <span class="sr-only">(current)</span></a></li>
-        <li id="cmdReports" class="reports"><a href="reports.php">Reports</a></li>
-      <!--  
-		<li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Dropdown <span class="caret"></span></a>
-          <ul class="dropdown-menu" role="menu">
-            <li><a href="#">Action</a></li>
-            <li><a href="#">Another action</a></li>
-            <li><a href="#">Something else here</a></li>
-            <li class="divider"></li>
-            <li><a href="#">Separated link</a></li>
-            <li class="divider"></li>
-            <li><a href="#">One more separated link</a></li>
-          </ul>
-        </li>
-      -->
+        <li id="cmdEvents" class="active events" data-toggle="tooltip-bottom" title="Events"><a href="#"><span class="glyphicon glyphicon-home" aria-hidden="true"></span></a></li>
+        <li id="cmdReports" class="reports"><a href="reports.php" data-toggle="tooltip-bottom" title="Reports"><span class="glyphicon glyphicon-dashboard" aria-hidden="true"></span></a></li>
 	  </ul>
       <form class="navbar-form navbar-left" role="search">
         <div class="form-group">
           <input id="txtSearch" type="text" class="form-control input-widesearch" placeholder="Search" style="width: 500px">
         </div>
-        <button id="cmdSearch" type="submit" class="btn btn-default">Search</button>
-        <button id="cmdReset" type="submit" class="btn btn-default">Reset</button>
+        <button id="cmdSearch" type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Refresh"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span></button>
+        <button id="cmdReset" type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Reset all">Reset</button>
       </form>
-	  <ul class="nav navbar-nav navbar-right">
-		<!-- <li class=""><img src="images/HMS2.png" width="100px"/></li> -->
-<!--
-<nav>
-  <ul class="pager pull-right">
-    <li class="next disabled"><a href="#">Newer <span aria-hidden="true">&rarr;</span></a></li>
-	<li class="previous"><a href="#"><span aria-hidden="true">&larr;</span> Older</a></li>
-  </ul>
-</nav>
--->
-
-		</ul>
+      <form class="navbar-form navbar-right" role="search">
+        <button type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Settings (not implemented yet)"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>
+        <button type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Log out (not implemented yet)"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span></button>
+      </form>
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
 </nav>
@@ -417,37 +393,11 @@
   </div>
 </div>
 
-<div id="contextMenu" class="modal dropdown clearfix">
-    <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu" style="display:block;position:static;margin-bottom:5px;">
-      <li><a tabindex="-1" href="#">Details</a></li>
-      <li><a tabindex="-1" href="#">Add to filter</a></li>
-      <!--<li><a tabindex="-1" href="#">Something else here</a></li>
-      <li class="divider"></li>
-      <li><a tabindex="-1" href="#">Separated link</a></li>-->
-    </ul>
-</div>
-
-<!--
-<div>
-    <label><input id="debug" type="checkbox" checked=""><span class="label label-primary">DEBUG</span></label>
-    <label><input id="info" type="checkbox" checked=""><span class="label label-info">INFO</span></label>
-    <label><input id="notice" type="checkbox" checked=""><span class="label label-success">NOTICE</span></label>
-    <label><input id="warning" type="checkbox" checked=""><span class="label label-warning">WARNING</span></label>
-    <label><input id="err" type="checkbox" checked=""><span class="label label-danger">ERROR</span></label>
-</div>
--->
-<!--
-<nav>
-  <ul class="pager pull-right" align=right>
-	<li class="previous disabled"><a href="#"><span aria-hidden="true">&larr;</span> Older</a></li>
-    <li class="next"><a href="#">Newer <span aria-hidden="true">&rarr;</span></a></li>
-  </ul>
-</nav>
--->
   <!-- Table class="table small-table" -->
-  <table id="table-style" class="table small-table eventtable table-striped" data-toggle="table" data-url="json/events.php" data-cache="false" data-row-style="rowStyle">
+  <table id="table-style" class="table small-table table-striped" data-toggle="table" data-url="json/events.php" data-height="800" data-pagination="true" data-page-size="100">
 	<thead> 
 		<tr>
+			<th data-field="ID" data-visible="false" data-formatter="idFormat">Id</th>
 			<th data-field="Priority" data-formatter="SeverityFormat">Severity</th>
 			<th data-field="DeviceReportedTime">Date</th>
 			<th data-field="Priority" data-visible="false">HiddenSeverity</th>

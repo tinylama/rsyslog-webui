@@ -51,7 +51,7 @@
 				if( $keyvalue == "NETWORK" ) { $keyvalue = "7"; }
 				if( $keyvalue == "UUCP" ) { $keyvalue = "8"; }
 				if( $keyvalue == "CRON" ) { $keyvalue = "9"; }
-				if( $keyvalue == "AUTH-MESSAGE" ) { $keyvalue = "10"; }
+				if( $keyvalue == "AUTH-MESSAGE-10" ) { $keyvalue = "10"; }
 				if( $keyvalue == "FTP" ) { $keyvalue = "11"; }
 				if( $keyvalue == "NTP" ) { $keyvalue = "12"; }
 				if( $keyvalue == "LOG-AUDIT" ) { $keyvalue = "13"; }
@@ -84,7 +84,11 @@
 			if( $keyname == "Syslogtag" ) $keyname = "SysLogTag";
 			if( $keyname == "Messagetype" ) $keyname = "Messagetype";
 			
+			if( $expression != "=" && $expression != "<>" && $expression != "<" && $expression != ">" )
+				exit();
+			
 			if( $expression == "=" ) $expression = "LIKE";
+			
 			
 			$qArray[ "param".strval( $x ) ] = $keyvalue; 
 			
@@ -98,7 +102,7 @@
 	$db = new PDO( "mysql:host=$mysql_server;dbname=$mysql_database;charset=utf8", $mysql_user, $mysql_password );
 
 	$rows = array();
-	$stmt = $db->prepare($query . $wherestring . " ORDER BY ID DESC LIMIT 100");
+	$stmt = $db->prepare($query . $wherestring . " ORDER BY ID DESC LIMIT 2000");
 
 	if( $stmt->execute( $qArray ) )
 	foreach( $stmt as $row ) {
