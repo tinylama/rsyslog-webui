@@ -15,7 +15,15 @@ Automating chart cache
 * This means you need to schedule a timer job each day.
 * Example for crontab line (crontab -e):
 ``` 
-  1 0 * * * cd /var/www/html/maintenance; ./generate_reports_cache.sh
+  5 0 * * * cd /var/www/html/maintenance; ./generate_reports_cache.sh
+```
+
+Database Maintenance
+---
+* Make sure you have set variable $keep_logs_for_days in config.php
+* Example for crontab line (crontab -e):
+```
+  1 0 * * * /usr/bin/php /var/www/html/maintenance/db-maintenance.php
 ```
 
 Enjoy!

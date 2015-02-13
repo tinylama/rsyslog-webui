@@ -10,5 +10,8 @@
 	
 	// Other
 	$site_name = "bootstrap-rsyslog-ui";
+
+	// Database Maintenance
+	$keep_logs_for_days = 30;
 	
 ?>
