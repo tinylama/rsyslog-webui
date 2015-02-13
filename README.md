@@ -13,9 +13,9 @@ Automating chart cache
 ---
 * The charts are now based on cached json-files instead of querying the database each time the charts are drawned.
 * This means you need to schedule a timer job each day.
-* Example for crontab:
+* Example for crontab line (crontab -e):
 ``` 
-  1 0 * * * root "cd /var/www/html/maintenance; ./generate_reports_cache.sh"
+  1 0 * * * cd /var/www/html/maintenance; ./generate_reports_cache.sh
 ```
 
 Enjoy!
