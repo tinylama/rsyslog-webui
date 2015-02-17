@@ -23,7 +23,7 @@ Database Maintenance
 * Make sure you have set variable $keep_logs_for_days in config.php
 * Example for crontab line (crontab -e):
 ```
-  1 0 * * * /usr/bin/php /var/www/html/maintenance/db-maintenance.php
+  1 0 * * * cd /var/www/html/maintenance; /usr/bin/php ./db-maintenance.php
 ```
 
 Enjoy!
