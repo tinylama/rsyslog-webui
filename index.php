@@ -124,7 +124,7 @@
 			if( $element.hasClass('expandedMessage') == false)
 			{
 				// Add new tr with full message + add class
-				$element.after('<tr><td colspan="7" class="expandedMessage"><div class="increase-font-size">' + row.Message + '</div></td></tr>');
+				$element.after('<tr><td colspan="7" class="expandedMessage"><div class="increase-font-size">' + escapeHtml(row.Message) + '</div></td></tr>');
 				$element.addClass('expandedMessage');
 			}
 			else
@@ -271,7 +271,7 @@
 	
 	function MessageFormat(value)
 	{
-		return value;
+		return escapeHtml(value);
 	}
 	
 	function idFormat(value, row)
@@ -316,6 +316,15 @@
 		}
 	}
 	
+        function escapeHtml(text) {
+                return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
 	</script>
   
  <body>
