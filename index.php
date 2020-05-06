@@ -35,8 +35,6 @@
     <script src="js/bootstrap-table.min.js"></script>
 	<script src="js/bootstrap-tooltip.js"></script>
 	<script src="js/bootstrap-context.js"></script> 
-	<link rel="stylesheet" href="css/dark-mode.css">
-	<script src="js/dark-mode-switch.min.js"></script>
 
   	<script type="text/javascript">
 	
@@ -355,17 +353,13 @@
       <ul class="nav navbar-nav">
         <li id="cmdEvents" class="active events" data-toggle="tooltip-bottom" title="Events"><a href="#"><span class="glyphicon glyphicon-home" aria-hidden="true"></span></a></li>
 	  </ul>
-      <form class="navbar-form navbar-left" role="search">
+      <form class="navbar-form navbar-right" role="search">
         <div class="form-group">
           <input id="txtSearch" type="text" class="form-control input-widesearch" placeholder="Search" style="width: 500px">
         </div>
         <button id="cmdSearch" type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Refresh"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span></button>
         <button id="cmdReset" type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Reset all">Reset</button>
       </form>
-	  <div class="custom-control custom-switch">
-	    <input type="checkbox" class="custom-control-input" id="darkSwitch">
-	    <label class="custom-control-label" for="darkSwitch">Dark Mode</label>
-	  </div>
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
 </nav>
