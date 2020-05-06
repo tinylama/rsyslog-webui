@@ -1,41 +1,40 @@
 <!DOCTYPE html>
-
 <?php include 'config.php'; ?>
-
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php echo $site_name; ?></title>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>
+            <?php echo $site_name; ?>
+        </title>
+		<!-- Bootstrap -->
+		<link href="css/bootstrap.min.css" rel="stylesheet">
+		<link href="css/bootstrap-table.min.css" rel="stylesheet">
+		<link href="css/bootstrap-tooltip.css" rel="stylesheet">
+		<link href="css/bootstrap-context.css" rel="stylesheet"> 
+		<link href="css/custom.css" rel="stylesheet">   
 
-    <!-- Bootstrap -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
-    <link href="css/bootstrap-table.min.css" rel="stylesheet">
-    <link href="css/bootstrap-tooltip.css" rel="stylesheet">
-	<link href="css/bootstrap-context.css" rel="stylesheet"> 
-    <link href="css/custom.css" rel="stylesheet">   
-
-    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-    <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
-	<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-	<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-	<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-	<link rel="manifest" href="site.webmanifest">
-  </head>
-
-    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-    <!-- Include all compiled plugins (below), or include individual files as needed -->
-    <script src="js/bootstrap.min.js"></script>
-    <script src="js/bootstrap-table.min.js"></script>
-	<script src="js/bootstrap-tooltip.js"></script>
-	<script src="js/bootstrap-context.js"></script> 
-  	<script type="text/javascript">
+		<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+		<!-- Include all compiled plugins (below), or include individual files as needed -->
+		<script src="js/bootstrap.min.js"></script>
+		<script src="js/bootstrap-table.min.js"></script>
+		<script src="js/bootstrap-tooltip.js"></script>
+		<script src="js/bootstrap-context.js"></script> 
+		<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" crossorigin="anonymous">
+		<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media
+        queries -->
+        <!-- WARNING: Respond.js doesn't work if you view the page via file://
+        -->
+        <!--[if lt IE 9]>
+        <![endif]-->
+        <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+        <link rel="manifest" href="site.webmanifest">
+    </head>
+<script type="text/javascript">
 	
 	$(function () {
 		
@@ -330,101 +329,93 @@
         }
 
 	</script>
-  
- <body>
- 
-<div style="width:90%; margin: 0 auto; display: block">
-<nav class="navbar navbar-default" role="navigation">
-  <div class="container-fluid">
-    <!-- Brand and toggle get grouped for better mobile display -->
-    <div class="navbar-header">
-		<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
-			<span class="sr-only">Toggle navigation</span>
-			<span class="icon-bar"></span>
-			<span class="icon-bar"></span>
-			<span class="icon-bar"></span>
-		</button>
-		<a class="navbar-brand" href="#"><?php echo $site_name; ?></a>
-    </div>
-
-    <!-- Collect the nav links, forms, and other content for toggling -->
-    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-      <ul class="nav navbar-nav">
-        <li id="cmdEvents" class="active events" data-toggle="tooltip-bottom" title="Events"><a href="#"><span class="glyphicon glyphicon-home" aria-hidden="true"></span></a></li>
-	  </ul>
-      <form class="navbar-form navbar-left" role="search">
-        <div class="form-group">
-          <input id="txtSearch" type="text" class="form-control input-widesearch" placeholder="Search" style="width: 500px">
+    <body>
+    <div style="width:90%; margin: 0 auto; display: block">
+        <nav class="navbar navbar-light bg-light navbar-expand-md" role="navigation">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <button type="button" class="navbar-toggler collapsed" data-toggle="collapse"
+            data-target="#bs-example-navbar-collapse-1">	<span class="sr-only">Toggle navigation</span>
+&#x2630;</button>	<a class="navbar-brand"
+            href="#"><?php echo $site_name; ?></a>
+            <!-- Collect the nav links, forms,
+            and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li id="cmdEvents" class="active events nav-item" data-toggle="tooltip-bottom"
+                    title="Events"><a href="#" class="nav-link"><span class="fa fa-home" aria-hidden="true"></span></a>
+                    </li>
+                </ul>
+                <form class="form-inline " role="search">
+                    <div class="form-group">
+                        <input id="txtSearch" type="text" class="form-control input-widesearch"
+                        placeholder="Search" style="width: 500px">
+                    </div>
+                    <button id="cmdSearch" type="submit" class="btn btn-secondary" data-toggle="tooltip-bottom"
+                    title="Refresh"><span class="fa fa-refresh" aria-hidden="true"></span>
+                    </button>
+                    <button id="cmdReset" type="submit" class="btn btn-secondary" data-toggle="tooltip-bottom"
+                    title="Reset all">Reset</button>
+                </form>
+            </div>
+            <!-- /.navbar-collapse -->
+            <!-- /.container-fluid -->
+        </nav>
+        <div id="debugmessages"></div>
+        <div class="progress">
+            <div id="pgDebug" class="progress-bar progress-bar-primary progress-bar-striped"
+            style="width: 0%" data-toggle="tooltip" title="Debug"> <span class="sr-only">20% Complete (debug)</span>
+            </div>
+            <div id="pgInfo" class="progress-bar progress-bar-info progress-bar-striped"
+            style="width: 0%" data-toggle="tooltip" title="Information"> <span class="sr-only">20% Complete (info)</span>
+            </div>
+            <div id="pgNotice" class="progress-bar progress-bar-success progress-bar-striped"
+            style="width: 0%" data-toggle="tooltip" title="Notice"> <span class="sr-only">20% Complete (notice)</span>
+            </div>
+            <div id="pgWarning" class="progress-bar progress-bar-warning progress-bar-striped"
+            style="width: 0%" data-toggle="tooltip" title="Warning"> <span class="sr-only">20% Complete (warning)</span>
+            </div>
+            <div id="pgError" class="progress-bar progress-bar-danger progress-bar-striped"
+            style="width: 0%" data-toggle="tooltip" title="Error"> <span class="sr-only">20% Complete (danger)</span>
+            </div>
         </div>
-        <button id="cmdSearch" type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Refresh"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span></button>
-        <button id="cmdReset" type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Reset all">Reset</button>
-      </form>
-    </div><!-- /.navbar-collapse -->
-  </div><!-- /.container-fluid -->
-</nav>
-
-<div id="debugmessages"></div>
-
-<div class="progress">
-  <div id="pgDebug" class="progress-bar progress-bar-primary progress-bar-striped" style="width: 0%" data-toggle="tooltip" title="Debug">
-    <span class="sr-only">20% Complete (debug)</span>
-  </div>
-  <div id="pgInfo" class="progress-bar progress-bar-info progress-bar-striped" style="width: 0%" data-toggle="tooltip" title="Information">
-    <span class="sr-only">20% Complete (info)</span>
-  </div>
-  <div id="pgNotice" class="progress-bar progress-bar-success progress-bar-striped" style="width: 0%" data-toggle="tooltip" title="Notice">
-    <span class="sr-only">20% Complete (notice)</span>
-  </div>
-  <div id="pgWarning" class="progress-bar progress-bar-warning progress-bar-striped" style="width: 0%" data-toggle="tooltip" title="Warning">
-    <span class="sr-only">20% Complete (warning)</span>
-  </div>
-  <div id="pgError" class="progress-bar progress-bar-danger progress-bar-striped" style="width: 0%" data-toggle="tooltip" title="Error">
-    <span class="sr-only">20% Complete (danger)</span>
-  </div>
-</div>
-
-<!-- Modal -->
-<div class="modal" id="mdEventDetails" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-        <h4 class="modal-title" id="mdEventDetailsLabel">Modal title</h4>
-      </div>
-      <div class="modal-body">
-        ...
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
-      </div>
+        <!-- Modal -->
+        <div class="modal" id="mdEventDetails" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+        aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&#xD7;</span><span class="sr-only">Close</span>
+                        </button>
+                         <h4 class="modal-title" id="mdEventDetailsLabel">Modal title</h4>
+                    </div>
+                    <div class="modal-body">...</div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Table class="table small-table" -->
+        <table id="table-style" class="table small-table table-striped" data-toggle="table" data-url="json/events.php" data-height="800" data-pagination="true" data-page-size="100">
+            <thead>
+                <tr>
+                    <th data-field="ID" data-visible="false" data-formatter="idFormat">Id</th>
+                    <th data-field="Priority" data-formatter="SeverityFormat">Severity</th>
+                    <th data-field="DeviceReportedTime">Date</th>
+                    <th data-field="Priority" data-visible="false">HiddenSeverity</th>
+                    <th data-field="Facility" data-formatter="FacilityFormat">Facility</th>
+                    <th data-field="FromHost">Host</th>
+                    <th data-field="SysLogTag">Syslogtag</th>
+                    <th data-field="processid" data-visible="false">ProcessID</th>
+                    <th data-field="Messagetype" data-formatter="MessagetypeFormat">Messagetype</th>
+                    <th data-field="SmallMessage" data-toggle="tooltip" data-content="Message"
+                    data-formatter="MessageFormat">Message</th>
+                    <th data-field="Message" data-visible="false" data-formatter="LargeMessageFormat">Message</th>
+                </tr>
+            </thead>
+        </table>
     </div>
-  </div>
-</div>
-
-  <!-- Table class="table small-table" -->
-  <table id="table-style" class="table small-table table-striped" data-toggle="table" data-url="json/events.php" data-height="800" data-pagination="true" data-page-size="100">
-	<thead> 
-		<tr>
-			<th data-field="ID" data-visible="false" data-formatter="idFormat">Id</th>
-			<th data-field="Priority" data-formatter="SeverityFormat">Severity</th>
-			<th data-field="DeviceReportedTime">Date</th>
-			<th data-field="Priority" data-visible="false">HiddenSeverity</th>
-			<th data-field="Facility" data-formatter="FacilityFormat">Facility</th>
-			<th data-field="FromHost">Host</th>
-			<th data-field="SysLogTag">Syslogtag</th>
-			<th data-field="processid" data-visible="false">ProcessID</th>
-			<th data-field="Messagetype" data-formatter="MessagetypeFormat">Messagetype</th>
-			<th data-field="SmallMessage" data-toggle="tooltip" data-content="Message" data-formatter="MessageFormat">Message</th>
-			<th data-field="Message" data-visible="false" data-formatter="LargeMessageFormat">Message</th>
-		</tr>
-	</thead>
-  </table>
-  
-</div>
-<footer class="footer">
-    <div class="container">
-	</div>
-</footer>
-  </body>
-</html>
-
+    <footer class="footer">
+        <div class="container"></div>
+    </footer>
+</body>
