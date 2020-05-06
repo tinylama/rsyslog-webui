@@ -19,9 +19,6 @@
 		<link href="css/bootstrap-tooltip.css" rel="stylesheet">
 		<link href="css/bootstrap-context.css" rel="stylesheet"> 
 		<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" crossorigin="anonymous">
-<script>
-  new Darkmode().showWidget();
-</script>
         <!-- rsyslog-webui css -->
         <link href="css/custom.css" rel="stylesheet">
 		<script
