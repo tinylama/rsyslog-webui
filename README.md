@@ -40,4 +40,4 @@ http://localhost/syslog-ui
 ## Desktop:
 ![Desktop](/images/screenshot.png?raw=true "Desktop")
 
-[Original Code by hmsdao!](https://github.com/hmsdao/bootstrap-rsyslog-ui)
+[Original Code by hmsdao](https://github.com/hmsdao/bootstrap-rsyslog-ui)
