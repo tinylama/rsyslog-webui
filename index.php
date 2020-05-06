@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <?php include 'config.php'; ?>
 <html lang="en">
-    
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -16,12 +15,18 @@
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
         integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
         crossorigin="anonymous">
+		<link href="css/bootstrap-table.min.css" rel="stylesheet">
+		<link href="css/bootstrap-tooltip.css" rel="stylesheet">
+		<link href="css/bootstrap-context.css" rel="stylesheet"> 
         <!-- rsyslog-webui css -->
         <link href="css/custom.css" rel="stylesheet">
 		<script
   src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
   integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
   crossorigin="anonymous"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.16.0/bootstrap-table.min.js" integrity="sha256-JFzlEUS2cZGdNFhVNH3GSFuqZFLjzWIjOqG5BY+Yhvw=" crossorigin="anonymous"></script>
+		<script src="js/bootstrap-table.min.js"></script>
+		<script src="js/bootstrap-tooltip.js"></script>
 		<script src="js/bootstrap-context.js"></script> 
         <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media
         queries -->
