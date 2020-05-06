@@ -35,6 +35,9 @@
     <script src="js/bootstrap-table.min.js"></script>
 	<script src="js/bootstrap-tooltip.js"></script>
 	<script src="js/bootstrap-context.js"></script> 
+	<link rel="stylesheet" href="css/dark-mode.css">
+	<script src="js/dark-mode-switch.min.js"></script>
+
   	<script type="text/javascript">
 	
 	$(function () {
@@ -359,6 +362,10 @@
         <button id="cmdSearch" type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Refresh"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span></button>
         <button id="cmdReset" type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Reset all">Reset</button>
       </form>
+	  <div class="custom-control custom-switch navbar-right">
+	    <input type="checkbox" class="custom-control-input" id="darkSwitch">
+	    <label class="custom-control-label" for="darkSwitch">Dark Mode</label>
+	  </div>
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
 </nav>
