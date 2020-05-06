@@ -362,7 +362,7 @@
         <button id="cmdSearch" type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Refresh"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span></button>
         <button id="cmdReset" type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Reset all">Reset</button>
       </form>
-	  <div class="custom-control custom-switch navbar-right">
+	  <div class="custom-control custom-switch">
 	    <input type="checkbox" class="custom-control-input" id="darkSwitch">
 	    <label class="custom-control-label" for="darkSwitch">Dark Mode</label>
 	  </div>
