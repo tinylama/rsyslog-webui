@@ -1,9 +1,5 @@
 # Web UI for rsyslog
 
-![Alt text](/images/mobile-screenshot.jpg?raw=true "Screenshot")
-![Alt text](/images/screenshot.png?raw=true "Screenshot")
-
-
 Requirements
 ---
 * Ensure you have http server i.e. Apache with PHP and MYSQL installed and working.
@@ -37,5 +33,11 @@ Installation
 
 Then test in your web browser:
 http://localhost/syslog-ui
+
+## Mobile:
+![Mobile](/images/mobile-screenshot.jpg?raw=true "Mobile")
+
+## Desktop:
+![Desktop](/images/screenshot.png?raw=true "Desktop")
 
 [Original Code by hmsdao!](https://github.com/hmsdao/bootstrap-rsyslog-ui)
