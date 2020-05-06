@@ -14,8 +14,6 @@
     <link href="css/bootstrap-table.min.css" rel="stylesheet">
     <link href="css/bootstrap-tooltip.css" rel="stylesheet">
 	<link href="css/bootstrap-context.css" rel="stylesheet"> 
-	
-	<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <link href="css/custom.css" rel="stylesheet">   
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
@@ -349,6 +347,7 @@
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
       <ul class="nav navbar-nav">
         <li id="cmdEvents" class="active events" data-toggle="tooltip-bottom" title="Events"><a href="#"><span class="glyphicon glyphicon-home" aria-hidden="true"></span></a></li>
+        <li id="cmdReports" class="reports"><a href="reports.php" data-toggle="tooltip-bottom" title="Reports"><span class="glyphicon glyphicon-dashboard" aria-hidden="true"></span></a></li>
 	  </ul>
       <form class="navbar-form navbar-left" role="search">
         <div class="form-group">
@@ -356,6 +355,10 @@
         </div>
         <button id="cmdSearch" type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Refresh"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span></button>
         <button id="cmdReset" type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Reset all">Reset</button>
+      </form>
+      <form class="navbar-form navbar-right" role="search">
+        <button type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Settings (not implemented yet)"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></button>
+        <button type="submit" class="btn btn-default" data-toggle="tooltip-bottom" title="Log out (not implemented yet)"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span></button>
       </form>
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
@@ -425,4 +428,3 @@
 </footer>
   </body>
 </html>
-

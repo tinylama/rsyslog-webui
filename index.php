@@ -8,26 +8,21 @@
         <title>
             <?php echo $site_name; ?>
         </title>
-        <!-- jQuery and Popper.js -->
-		<script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
-		<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
-        <!-- Bootstrap -->
+		<!-- Bootstrap -->
+		<link href="css/bootstrap.min.css" rel="stylesheet">
 		<link href="css/bootstrap-table.min.css" rel="stylesheet">
 		<link href="css/bootstrap-tooltip.css" rel="stylesheet">
 		<link href="css/bootstrap-context.css" rel="stylesheet"> 
-		<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" crossorigin="anonymous">
-		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
-        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
-        crossorigin="anonymous">
-        <!-- rsyslog-webui css -->
-        <link href="css/custom.css" rel="stylesheet">
+		<link href="css/custom.css" rel="stylesheet">   
 
+		<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+		<!-- Include all compiled plugins (below), or include individual files as needed -->
+		<script src="js/bootstrap.min.js"></script>
 		<script src="js/bootstrap-table.min.js"></script>
 		<script src="js/bootstrap-tooltip.js"></script>
 		<script src="js/bootstrap-context.js"></script> 
-		<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.16.0/bootstrap-table.min.js" integrity="sha256-JFzlEUS2cZGdNFhVNH3GSFuqZFLjzWIjOqG5BY+Yhvw=" crossorigin="anonymous"></script>
-        <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media
+		<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media
         queries -->
         <!-- WARNING: Respond.js doesn't work if you view the page via file://
         -->
