@@ -18,6 +18,7 @@
 		<link href="css/bootstrap-table.min.css" rel="stylesheet">
 		<link href="css/bootstrap-tooltip.css" rel="stylesheet">
 		<link href="css/bootstrap-context.css" rel="stylesheet"> 
+		<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
         <!-- rsyslog-webui css -->
         <link href="css/custom.css" rel="stylesheet">
 		<script
@@ -347,7 +348,7 @@
             <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav">
                     <li id="cmdEvents" class="active events nav-item" data-toggle="tooltip-bottom"
-                    title="Events"><a href="#" class="nav-link"><span class="glyphicon glyphicon-home" aria-hidden="true"></span></a>
+                    title="Events"><a href="#" class="nav-link"><span class="fa fa-home" aria-hidden="true"></span></a>
                     </li>
                 </ul>
                 <form class="form-inline " role="search">
@@ -356,7 +357,7 @@
                         placeholder="Search" style="width: 500px">
                     </div>
                     <button id="cmdSearch" type="submit" class="btn btn-secondary" data-toggle="tooltip-bottom"
-                    title="Refresh"><span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
+                    title="Refresh"><span class="fa fa-refresh" aria-hidden="true"></span>
                     </button>
                     <button id="cmdReset" type="submit" class="btn btn-secondary" data-toggle="tooltip-bottom"
                     title="Reset all">Reset</button>
