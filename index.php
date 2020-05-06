@@ -402,7 +402,22 @@
         </div>
         <!-- Table class="table small-table" -->
         <table id="table-style" class="table small-table table-striped" data-toggle="table" data-url="json/events.php" data-height="800" data-pagination="true" data-page-size="100">
-
+            <thead>
+                <tr>
+                    <th data-field="ID" data-visible="false" data-formatter="idFormat">Id</th>
+                    <th data-field="Priority" data-formatter="SeverityFormat">Severity</th>
+                    <th data-field="DeviceReportedTime">Date</th>
+                    <th data-field="Priority" data-visible="false">HiddenSeverity</th>
+                    <th data-field="Facility" data-formatter="FacilityFormat">Facility</th>
+                    <th data-field="FromHost">Host</th>
+                    <th data-field="SysLogTag">Syslogtag</th>
+                    <th data-field="processid" data-visible="false">ProcessID</th>
+                    <th data-field="Messagetype" data-formatter="MessagetypeFormat">Messagetype</th>
+                    <th data-field="SmallMessage" data-toggle="tooltip" data-content="Message"
+                    data-formatter="MessageFormat">Message</th>
+                    <th data-field="Message" data-visible="false" data-formatter="LargeMessageFormat">Message</th>
+                </tr>
+            </thead>
         </table>
     </div>
     <footer class="footer">
