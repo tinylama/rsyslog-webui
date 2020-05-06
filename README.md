@@ -1,6 +1,7 @@
 # Web UI for rsyslog
 
-![Alt text](/screenshot.png?raw=true "Screenshot")
+![Alt text](/images/mobile-screenshot.jpg?raw=true "Screenshot")
+![Alt text](/images/screenshot.png?raw=true "Screenshot")
 
 
 Requirements
@@ -37,4 +38,4 @@ Installation
 Then test in your web browser:
 http://localhost/syslog-ui
 
-![Original Code by hmsdao](https://github.com/hmsdao/bootstrap-rsyslog-ui)
+[Original Code by hmsdao!](https://github.com/hmsdao/bootstrap-rsyslog-ui)
