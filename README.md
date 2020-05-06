@@ -3,7 +3,7 @@
 Requirements
 ---
 * Ensure you have http server i.e. Apache with PHP and MYSQL installed and working.
-* You will need to have rsyslog storing logs in mysql, so install rsyslog **bold** and rsyslog-mysql **bold**
+* You will need to have rsyslog storing logs in mysql, so install **rsyslog** and **rsyslog-mysql**
 * Create a table for syslog entries and user that can SELECT, INSERT, UPDATE, DELETE, FILE for that table only
 * Add the following to /etc/rsyslog.conf to enable logs to be stored in mysql
 ```
