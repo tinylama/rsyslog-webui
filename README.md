@@ -1,29 +1,40 @@
-#bootstrap-rsyslog-ui
+# Web UI for rsyslog
 
-Screenshot: https://raw.githubusercontent.com/hmsdao/bootstrap-rsyslog-ui/master/images/main.PNG
+![Alt text](/screenshot.png?raw=true "Screenshot")
+
+
+Requirements
+---
+* Ensure you have http server i.e. Apache with PHP and MYSQL installed and working.
+* You will need to have rsyslog storing logs in mysql, so install rsyslog **bold** and rsyslog-mysql **bold**
+* Create a table for syslog entries and user that can SELECT, INSERT, UPDATE, DELETE, FILE for that table only
+* Add the following to /etc/rsyslog.conf to enable logs to be stored in mysql
+```
+    $ModLoad ommysql
+    *.* :ommysql:127.0.0.1,SyslogTableName,SQLUSER,SQLPASSWORD
+```
+* Restart the rsyslog service
 
 Installation
 ---
-* Configure rsyslog according to (you can skip installation of LogAnalyzer): http://tecadmin.net/setup-rsyslog-with-mysql-and-loganalyzer/
-* git clone "https://github.com/hmsdao/bootstrap-rsyslog-ui.git" /var/www/html/bootstrap-rsyslog-ui
-* Copy /var/www/html/bootstrap-rsyslog-ui/config-template.php to /var/www/html/bootstrap-rsyslog-ui/config.php
-* Edit config.php and correct mysql settings accordingly
+* Clone from github
+`git clone "https://github.com/Tiny-Lama/rsyslog-webui.git" /var/www/html/syslog-ui
 
-Automating chart cache
----
-* The charts are now based on cached json-files instead of querying the database each time the charts are drawned.
-* This means you need to schedule a timer job each day.
-* Example for crontab line (crontab -e):
-``` 
-  5 0 * * * cd /var/www/html/maintenance; ./generate_reports_cache.sh
-```
+* Create the required config from the template
+`cp /var/www/html/syslog/config-template.php /var/www/html/syslog/config.php
 
-Database Maintenance
----
-* Make sure you have set variable $keep_logs_for_days in config.php
-* Example for crontab line (crontab -e):
+* Modify your config file, this is where you will need your mysql database details.
+` sudo nano /var/www/html/syslog/config.php
+
+* Create a scheduled task for database clean-up. Open crontab
+`sudo crontab -e:
+
+* Modify crontab by pasting this at the end of the file and save (CTRL+O).
 ```
   1 0 * * * cd /var/www/html/maintenance; /usr/bin/php ./db-maintenance.php
 ```
 
-Enjoy!
+Then test in your web browser:
+http://localhost/syslog-ui
+
+![Original Code by hmsdao](https://github.com/hmsdao/bootstrap-rsyslog-ui)
