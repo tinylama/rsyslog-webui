@@ -5,8 +5,11 @@
 			
 	$query = "SELECT *, LEFT(Message, 120) AS SmallMessage FROM SystemEvents ";
 	$wherestring = "";
-
-	$searchstring = $_GET[ "search" ];
+	if (isset($_GET[ "search" ])){
+		$searchstring = $_GET[ "search" ];
+	}else{
+		$searchstring = "";
+	}
 
 	$qArray = array();
 	

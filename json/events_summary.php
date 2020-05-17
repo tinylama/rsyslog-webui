@@ -3,8 +3,11 @@
 	
 	$wherestring = "";
 
-	$searchstring = $_GET["search"];
-
+	if(isset($_GET["search"]){
+		$searchstring = $_GET["search"];
+	}else{
+		$searchstring = "";
+	}
 	$query = "SELECT Priority, COUNT(ID) AS Qty FROM ";
 	$qArray = array();
 
