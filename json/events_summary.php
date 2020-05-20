@@ -3,7 +3,7 @@
 	
 	$wherestring = "";
 
-	if(isset($_GET["search"]){
+	if(isset($_GET["search"])){
 		$searchstring = $_GET["search"];
 	}else{
 		$searchstring = "";
