@@ -211,11 +211,11 @@
 			{
 				switch(data[x][0])
 				{
-					case "3": { sum = sum + data[x][1]; break; }
-					case "4": { sum = sum + data[x][1]; break; }
-					case "5": { sum = sum + data[x][1]; break; }
-					case "6": { sum = sum + data[x][1]; break; }
-					case "7": { sum = sum + data[x][1]; break; }
+					case 3: { sum = sum + data[x][1]; break; }
+					case 4: { sum = sum + data[x][1]; break; }
+					case 5: { sum = sum + data[x][1]; break; }
+					case 6: { sum = sum + data[x][1]; break; }
+					case 7: { sum = sum + data[x][1]; break; }
 				}
 			}
 			
@@ -229,11 +229,11 @@
 			{
 				switch(data[x][0])
 				{
-					case "3": { $("#pgError").css('width', ((data[x][1]/sum) * 100) + "%"); three = true; break; }
-					case "4": { $("#pgWarning").css('width', ((data[x][1]/sum) * 100) + "%"); four = true; break; }
-					case "5": { $("#pgNotice").css('width', ((data[x][1]/sum) * 100) + "%"); five = true; break; }
-					case "6": { $("#pgInfo").css('width', ((data[x][1]/sum) * 100) + "%"); six = true; break; }
-					case "7": { $("#pgDebug").css('width', ((data[x][1]/sum) * 100) + "%"); seven = true; break; }
+					case 3: { $("#pgError").css('width', ((data[x][1]/sum) * 100) + "%"); three = true; break; }
+					case 4: { $("#pgWarning").css('width', ((data[x][1]/sum) * 100) + "%"); four = true; break; }
+					case 5: { $("#pgNotice").css('width', ((data[x][1]/sum) * 100) + "%"); five = true; break; }
+					case 6: { $("#pgInfo").css('width', ((data[x][1]/sum) * 100) + "%"); six = true; break; }
+					case 7: { $("#pgDebug").css('width', ((data[x][1]/sum) * 100) + "%"); seven = true; break; }
 				}
 			}
 			
