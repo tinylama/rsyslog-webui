@@ -200,51 +200,41 @@
 		
     });
 
-	function getSummary() {
-		$.getJSON( "json/events_summary.php?" + "search=" + encodeURIComponent($("#txtSearch").val()), function( data ) {
-			var items = [];
-			
-			var items = data.length;
-			var sum = 0;
-			
-			for(var x = 0; x < items; x++)
-			{
-				switch(data[x][0])
-				{
-					case "3": { sum = sum + data[x][1]; break; }
-					case "4": { sum = sum + data[x][1]; break; }
-					case "5": { sum = sum + data[x][1]; break; }
-					case "6": { sum = sum + data[x][1]; break; }
-					case "7": { sum = sum + data[x][1]; break; }
-				}
-			}
-			
-			var three = false;
-			var four = false;
-			var five = false;
-			var six = false;
-			var seven = false;
-			
-			for(var x = 0; x < items; x++)
-			{
-				switch(data[x][0])
-				{
-					case "3": { $("#pgError").css('width', ((data[x][1]/sum) * 100) + "%"); three = true; break; }
-					case "4": { $("#pgWarning").css('width', ((data[x][1]/sum) * 100) + "%"); four = true; break; }
-					case "5": { $("#pgNotice").css('width', ((data[x][1]/sum) * 100) + "%"); five = true; break; }
-					case "6": { $("#pgInfo").css('width', ((data[x][1]/sum) * 100) + "%"); six = true; break; }
-					case "7": { $("#pgDebug").css('width', ((data[x][1]/sum) * 100) + "%"); seven = true; break; }
-				}
-			}
-			
-			if( three == false ) { $("#pgError").css('width', "0%"); }
-			if( four == false ) { $("#pgWarning").css('width', "0%"); }
-			if( five == false ) { $("#pgNotice").css('width', "0%"); }
-			if( six == false ) { $("#pgInfo").css('width', "0%"); }
-			if( seven == false ) { $("#pgDebug").css('width', "0%"); }
-			
-		});
+	function getSummary() { 
+	    $.getJSON("json/events_summary.php?" + "search=" + encodeURIComponent($("#txtSearch").val()), function(data) {
+	        var items = data.length;
+	        var sum = 0;
+	        var progressBars = {
+	            3: { id: "#pgError", flag: false },
+	            4: { id: "#pgWarning", flag: false },
+	            5: { id: "#pgNotice", flag: false },
+	            6: { id: "#pgInfo", flag: false },
+	            7: { id: "#pgDebug", flag: false }
+	        };
+	
+	        for (var x = 0; x < items; x++) {
+	            var key = parseInt(data[x][0], 10);
+	            if (progressBars[key]) {
+	                sum += data[x][1];
+	            }
+	        }
+	
+	        for (var x = 0; x < items; x++) {
+	            var key = parseInt(data[x][0], 10);
+	            if (progressBars[key]) {
+	                $(progressBars[key].id).css('width', ((data[x][1] / sum) * 100) + "%");
+	                progressBars[key].flag = true;
+	            }
+	        }
+	
+	        for (var key in progressBars) {
+	            if (!progressBars[key].flag) {
+	                $(progressBars[key].id).css('width', "0%");
+	            }
+	        }
+	    });
 	}
+
 	
 	function toInt( val ) {
 		return val & 1;
