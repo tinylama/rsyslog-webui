@@ -63,3 +63,130 @@
 }
 
 body { padding-top: 20px; }
+
+/* Softer empty progress track (severity strip) so it does not read as a stray divider */
+.progress {
+	background-color: rgba(0, 0, 0, 0.06);
+}
+
+/* Log grid: one header row only; search lives in the navbar */
+.bootstrap-table table.events-log-table thead th {
+	border-bottom: 2px solid var(--bs-border-color, #dee2e6);
+	background-color: var(--bs-tertiary-bg, #f8f9fa);
+	vertical-align: bottom;
+}
+
+.bootstrap-table table.events-log-table thead th .th-inner {
+	font-weight: 600;
+	font-size: 0.68rem;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--bs-secondary-color, #6c757d);
+	padding-top: 0.55rem;
+	padding-bottom: 0.55rem;
+	white-space: nowrap;
+}
+
+.bootstrap-table table.events-log-table thead th .sortable {
+	cursor: pointer;
+}
+
+.bootstrap-table table.events-log-table thead th .sortable:hover .th-inner {
+	color: var(--bs-body-color, #212529);
+}
+
+/* --- First-login System Logs onboarding (non-blocking, subtle) --- */
+.rsyslog-onboarding-overlay{
+	position: fixed;
+	inset: 0;
+	z-index: 2000;
+	pointer-events: none; /* never block normal UI clicks */
+}
+
+.rsyslog-onboarding-skip{
+	position: fixed;
+	top: 1rem;
+	right: 1rem;
+	z-index: 2001;
+	pointer-events: auto; /* allow skipping */
+	-webkit-backdrop-filter: blur(6px);
+	backdrop-filter: blur(6px);
+	animation: rsyslogOnboardingFadeIn 900ms ease-out both;
+}
+
+.rsyslog-onboarding-card{
+	position: fixed;
+	left: 50%;
+	bottom: 1.2rem;
+	transform: translateX(-50%);
+	max-width: min(560px, calc(100vw - 2rem));
+	border-radius: 14px;
+	background: rgba(20, 20, 25, 0.92);
+	color: #fff;
+	pointer-events: none;
+	padding: 0.9rem 1rem;
+	animation: rsyslogOnboardingCardIn 650ms ease-out both;
+}
+
+.rsyslog-onboarding-topline{
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 1rem;
+}
+
+.rsyslog-onboarding-highlight{
+	animation: rsyslogOnboardingPulse 1.2s ease-in-out infinite;
+	outline: 3px solid rgba(13, 202, 240, 0.9);
+	outline-offset: 3px;
+	border-radius: 10px;
+}
+
+.rsyslog-onboarding-hide{
+	animation: rsyslogOnboardingFadeOut 220ms ease-in both;
+}
+
+.rsyslog-onboarding-dots{
+	display: flex;
+	gap: 8px;
+	justify-content: center;
+}
+.rsyslog-onboarding-dot{
+	width: 8px;
+	height: 8px;
+	border-radius: 99px;
+	background: rgba(255,255,255,0.25);
+}
+.rsyslog-onboarding-dot.active{
+	background: rgba(13, 202, 240, 0.95);
+	box-shadow: 0 0 0 6px rgba(13, 202, 240, 0.14);
+}
+
+@keyframes rsyslogOnboardingCardIn{
+	from{ opacity:0; transform: translateX(-50%) translateY(12px) scale(0.98); }
+	to{ opacity:1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+@keyframes rsyslogOnboardingFadeIn{
+	from{ opacity:0; transform: translateY(-6px); }
+	to{ opacity:1; transform: translateY(0); }
+}
+@keyframes rsyslogOnboardingFadeOut{
+	from{ opacity:1; transform: translateX(-50%); }
+	to{ opacity:0; transform: translateX(-50%) scale(0.99); }
+}
+@keyframes rsyslogOnboardingPulse{
+	0%{ box-shadow: 0 0 0 0 rgba(13, 202, 240, 0.0); }
+	30%{ box-shadow: 0 0 0 9px rgba(13, 202, 240, 0.18); }
+	70%{ box-shadow: 0 0 0 14px rgba(13, 202, 240, 0.07); }
+	100%{ box-shadow: 0 0 0 0 rgba(13, 202, 240, 0.0); }
+}
+
+@media (prefers-reduced-motion: reduce){
+	.rsyslog-onboarding-skip,
+	.rsyslog-onboarding-card{
+		animation: none !important;
+	}
+	.rsyslog-onboarding-highlight{
+		animation: none !important;
+	}
+}

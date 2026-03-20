@@ -1,0 +1,18 @@
+http:
+  routers:
+    rsyslog-webui:
+      # Match any hostname so we don't need to commit a real domain name.
+      # Traefik + ACME will request/serve the correct certificate for the
+      # hostname the client is using.
+      rule: "HostRegexp(`^.+$`)"
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: cf
+      service: rsyslog-webui
+  services:
+    rsyslog-webui:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://web:80"

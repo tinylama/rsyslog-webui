@@ -1,0 +1,175 @@
+/**
+ * App shell: responsive layout for phone / tablet / desktop.
+ */
+
+.app-shell {
+	width: 100%;
+	max-width: 1480px;
+	margin-left: auto;
+	margin-right: auto;
+	padding-left: clamp(0.65rem, 2.5vw, 1.25rem);
+	padding-right: clamp(0.65rem, 2.5vw, 1.25rem);
+	padding-bottom: 2rem;
+}
+
+.app-navbar {
+	box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+
+.app-navbar .navbar-brand {
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	max-width: min(100%, 12rem);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+@media (min-width: 992px) {
+	.app-navbar .navbar-brand {
+		max-width: 16rem;
+	}
+}
+
+/* Toolbar: stack cleanly on small screens */
+.app-toolbar {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 0.65rem;
+	width: 100%;
+}
+
+@media (min-width: 992px) {
+	.app-toolbar {
+		flex-direction: row;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: flex-end;
+		width: auto;
+		max-width: min(100%, 52rem);
+	}
+}
+
+.app-toolbar-main {
+	max-width: none;
+}
+
+@media (min-width: 992px) {
+	.app-toolbar-main {
+		flex: 1 1 auto;
+		min-width: 0;
+		justify-content: flex-start;
+		margin-right: 0.75rem;
+	}
+}
+
+.app-toolbar-actions-icons {
+	gap: 0.25rem;
+}
+
+.app-toolbar-actions-icons .btn {
+	padding-left: 0.5rem;
+	padding-right: 0.5rem;
+}
+
+.app-toolbar .form-control[type="search"] {
+	min-width: 0;
+	width: 100%;
+}
+
+@media (min-width: 992px) {
+	.app-toolbar .form-control[type="search"] {
+		width: min(100%, 22rem);
+		flex: 1 1 16rem;
+		max-width: 28rem;
+	}
+}
+
+.app-toolbar-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.4rem 0.75rem;
+}
+
+.app-user-pill {
+	font-size: 0.8rem;
+	color: var(--bs-secondary-color);
+	max-width: 10rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+@media (max-width: 991.98px) {
+	.app-user-pill {
+		max-width: 100%;
+		order: -1;
+		width: 100%;
+		padding: 0.15rem 0;
+	}
+}
+
+/* Severity strip: touch-friendly on phones */
+.app-severity-strip.progress {
+	min-height: 26px;
+}
+
+@media (min-width: 768px) {
+	.app-severity-strip.progress {
+		min-height: 22px;
+	}
+}
+
+/* Bootstrap-table: horizontal scroll on narrow viewports */
+.app-table-wrap {
+	width: 100%;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+/* Empty / no-rows state */
+.bootstrap-table .no-records-found td {
+	padding: 1.75rem 1rem !important;
+	text-align: center;
+	color: var(--bs-secondary-color);
+	font-size: 0.95rem;
+}
+
+/* Pagination: keep controls readable on narrow screens */
+.fixed-table-pagination .pagination {
+	flex-wrap: wrap;
+	justify-content: center;
+}
+
+/* Main screen “hero” */
+.app-home-hero{
+	background: linear-gradient(135deg, rgba(13, 110, 253, 0.18) 0%, rgba(13, 110, 253, 0.06) 45%, rgba(0, 0, 0, 0) 100%);
+	border: 1px solid rgba(13, 110, 253, 0.18);
+	border-radius: 16px;
+	padding: 0.95rem 1rem;
+	box-shadow: 0 12px 30px rgba(0,0,0,0.04);
+}
+
+.app-home-hero-icon{
+	width: 42px;
+	height: 42px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 12px;
+	background: rgba(13, 110, 253, 0.12);
+	color: var(--bs-primary);
+}
+
+.app-home-hero-title{
+	font-size: 1.05rem;
+	letter-spacing: -0.02em;
+}
+
+html[data-bs-theme="dark"] .app-home-hero{
+	background: linear-gradient(135deg, rgba(13, 110, 253, 0.20) 0%, rgba(13, 110, 253, 0.07) 55%, rgba(0, 0, 0, 0) 100%);
+	border-color: rgba(13, 110, 253, 0.24);
+	box-shadow: 0 14px 35px rgba(0,0,0,0.25);
+}

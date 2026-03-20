@@ -1,4 +1,30 @@
 config.php
+.env
+.env.tls
+.env.*
+/.env.*
+*.env
+
+# ACME cache/temp exports (never commit)
+.acme.json
+.acme.json.*
+*.acme.json.*
+/.acme.json.tmp
+/.acme.json.tmp2
+node_modules/
+/.playwright/
 .htaccess
 json/reports/cache/*.json
 site.webmanifest
+
+# Cursor / IDE
+.cursor/
+**/.cursor/
+*.cursor-plan.md
+.cursorrules.local
+
+# Debug / local logs
+debug-*.log
+
+# PHP dependencies
+/vendor/

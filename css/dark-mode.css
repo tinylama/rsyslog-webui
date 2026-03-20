@@ -1,16 +1,146 @@
-[data-theme="dark"] {
+/* Bootstrap 5 color mode + body legacy attribute (both set by dark-mode-switch.js) */
+html[data-bs-theme="dark"] body,
+body[data-theme="dark"] {
   background-color: #111 !important;
   color: #eee;
 }
 
-[data-theme="dark"] .bg-light {
+/*
+ * Navbar: pages use `navbar-light bg-light` even in dark mode.
+ * Ensure nav-link and dropdown controls inherit dark theme colors.
+ */
+html[data-bs-theme="dark"] .navbar-light.bg-light,
+body[data-theme="dark"] .navbar-light.bg-light {
+  background-color: #333 !important;
+  border-bottom-color: var(--bs-border-color) !important;
+}
+
+html[data-bs-theme="dark"] .navbar-light .nav-link,
+body[data-theme="dark"] .navbar-light .nav-link {
+  color: var(--bs-body-color) !important;
+}
+
+html[data-bs-theme="dark"] .navbar-light .nav-link:hover,
+body[data-theme="dark"] .navbar-light .nav-link:hover,
+html[data-bs-theme="dark"] .navbar-light .nav-link:focus,
+body[data-theme="dark"] .navbar-light .nav-link:focus {
+  color: var(--bs-primary) !important;
+}
+
+html[data-bs-theme="dark"] .navbar-light .dropdown-menu,
+body[data-theme="dark"] .navbar-light .dropdown-menu {
+  background-color: #222 !important;
+  border-color: var(--bs-border-color) !important;
+}
+
+html[data-bs-theme="dark"] .navbar-light .dropdown-item,
+body[data-theme="dark"] .navbar-light .dropdown-item {
+  color: var(--bs-body-color) !important;
+}
+
+html[data-bs-theme="dark"] .navbar-light .dropdown-item:hover,
+body[data-theme="dark"] .navbar-light .dropdown-item:hover,
+html[data-bs-theme="dark"] .navbar-light .dropdown-item:focus,
+body[data-theme="dark"] .navbar-light .dropdown-item:focus {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  color: var(--bs-body-color) !important;
+}
+
+html[data-bs-theme="dark"] .bg-light,
+body[data-theme="dark"] .bg-light {
   background-color: #333 !important;
 }
 
-[data-theme="dark"] .bg-white {
+html[data-bs-theme="dark"] .bg-white,
+body[data-theme="dark"] .bg-white {
   background-color: #000 !important;
 }
 
-[data-theme="dark"] .bg-black {
+html[data-bs-theme="dark"] .bg-black,
+body[data-theme="dark"] .bg-black {
   background-color: #eee !important;
+}
+
+/*
+ * Admin directory / other plain Bootstrap tables may use `thead.table-light`.
+ * In dark mode, we need to override the light header background so it matches
+ * the rest of the theme.
+ */
+html[data-bs-theme="dark"] .table-light > :not(caption) > * > * {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  color: var(--bs-body-color) !important;
+  border-color: var(--bs-border-color) !important;
+}
+
+html[data-bs-theme="dark"] .table-light {
+  border-color: var(--bs-border-color) !important;
+}
+
+/*
+ * bootstrap-table wraps #table-style in .fixed-table-container with #ddd borders
+ * and does not inherit Bootstrap table variables unless we map them here.
+ */
+html[data-bs-theme="dark"] .bootstrap-table .fixed-table-container,
+html[data-bs-theme="dark"] .bootstrap-table .fixed-table-header,
+html[data-bs-theme="dark"] .bootstrap-table .fixed-table-body {
+  background-color: var(--bs-table-bg) !important;
+  border-color: var(--bs-border-color) !important;
+}
+
+html[data-bs-theme="dark"] .bootstrap-table .table {
+  --bs-table-bg: var(--bs-body-bg);
+  --bs-table-color: var(--bs-body-color);
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.05);
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.075);
+  --bs-table-active-bg: rgba(255, 255, 255, 0.1);
+  color: var(--bs-table-color);
+  border-color: var(--bs-border-color) !important;
+}
+
+html[data-bs-theme="dark"] .bootstrap-table .table > :not(caption) > * > * {
+  background-color: transparent;
+  border-color: var(--bs-border-color) !important;
+  color: inherit;
+}
+
+html[data-bs-theme="dark"] .fixed-table-container thead th .th-inner {
+  background-color: var(--bs-table-bg) !important;
+  color: var(--bs-table-color) !important;
+  border-color: var(--bs-border-color) !important;
+}
+
+html[data-bs-theme="dark"] .bootstrap-table table.events-log-table thead th {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+html[data-bs-theme="dark"] .bootstrap-table table.events-log-table thead th .th-inner {
+  color: var(--bs-secondary-color) !important;
+}
+
+html[data-bs-theme="dark"] .bootstrap-table table.events-log-table thead th .sortable:hover .th-inner {
+  color: var(--bs-body-color) !important;
+}
+
+html[data-bs-theme="dark"] .fixed-table-container thead th {
+  border-color: var(--bs-border-color) !important;
+}
+
+html[data-bs-theme="dark"] .fixed-table-container tbody td {
+  border-color: var(--bs-border-color) !important;
+}
+
+html[data-bs-theme="dark"] .fixed-table-container tbody .selected td {
+  background-color: var(--bs-table-hover-bg) !important;
+}
+
+html[data-bs-theme="dark"] .fixed-table-pagination,
+html[data-bs-theme="dark"] .fixed-table-pagination .pagination-info,
+html[data-bs-theme="dark"] .fixed-table-pagination .page-list {
+  color: var(--bs-body-color) !important;
+}
+
+html[data-bs-theme="dark"] .fixed-table-pagination .pagination a {
+  background-color: var(--bs-secondary-bg) !important;
+  border-color: var(--bs-border-color) !important;
+  color: var(--bs-body-color) !important;
 }

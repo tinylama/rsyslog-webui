@@ -1,0 +1,73 @@
+/* Public landing (logged-out home) */
+.landing-hero {
+	background: linear-gradient(135deg, var(--bs-primary) 0%, #0d6efd 35%, #084298 100%);
+	color: #fff;
+	border-radius: 1rem;
+	padding: clamp(2rem, 6vw, 3.5rem);
+	margin-bottom: 2rem;
+	box-shadow: 0 0.5rem 2rem rgba(13, 110, 253, 0.25);
+}
+
+.landing-hero h1 {
+	font-weight: 700;
+	letter-spacing: -0.03em;
+	line-height: 1.15;
+}
+
+.landing-hero .lead {
+	opacity: 0.92;
+	max-width: 36rem;
+}
+
+.landing-feature {
+	border: 1px solid var(--bs-border-color);
+	border-radius: 0.75rem;
+	padding: 1.25rem;
+	height: 100%;
+	transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.landing-feature:hover {
+	box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.06);
+	border-color: var(--bs-primary-border-subtle);
+}
+
+.landing-feature .bi {
+	font-size: 1.75rem;
+	color: var(--bs-primary);
+}
+
+.landing-footer {
+	border-top: 1px solid var(--bs-border-color);
+	margin-top: 3rem;
+	padding-top: 1.5rem;
+	font-size: 0.875rem;
+	color: var(--bs-secondary-color);
+}
+
+.landing-docs {
+	border-top: 1px solid var(--bs-border-color);
+	padding-top: 1.5rem;
+}
+
+.landing-doc-card {
+	display: block;
+	border: 1px solid var(--bs-border-color);
+	border-radius: 0.75rem;
+	padding: 1rem 1.1rem;
+	height: 100%;
+	background: var(--bs-body-bg);
+	transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+	color: inherit;
+}
+
+.landing-doc-card:hover {
+	border-color: var(--bs-primary-border-subtle);
+	box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.06);
+	transform: translateY(-1px);
+}
+
+.landing-doc-card .bi {
+	font-size: 1.4rem;
+	color: var(--bs-primary);
+}

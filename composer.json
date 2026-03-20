@@ -1,0 +1,23 @@
+{
+  "name": "rsyslog-webui/app",
+  "description": "Rsyslog Web UI",
+  "require": {
+    "php": ">=8.3",
+    "firebase/php-jwt": "^6.10",
+    "phpdocumentor/reflection-docblock": "^5.0",
+    "spomky-labs/otphp": "^11.0",
+    "symfony/property-info": "^7.0",
+    "symfony/property-access": "^7.0",
+    "symfony/serializer": "^7.0",
+    "symfony/string": "^7.0",
+    "symfony/type-info": "^7.0",
+    "web-auth/webauthn-lib": "^4.8"
+  },
+  "config": {
+    "sort-packages": true,
+    "optimize-autoloader": true,
+    "audit": {
+      "block-insecure": false
+    }
+  }
+}

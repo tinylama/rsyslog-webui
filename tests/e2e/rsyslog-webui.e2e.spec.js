@@ -1,0 +1,443 @@
+const { test, expect } = require('@playwright/test');
+
+const ADMIN_USER = process.env.ADMIN_USER || 'admin';
+const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
+
+async function login(page) {
+  await page.goto('/login.php');
+  await page.locator('#username').fill(ADMIN_USER);
+  await page.locator('#password').fill(ADMIN_PASS);
+  await page.locator('#loginBtn').click();
+  await page.waitForURL('**/', { timeout: 10_000 });
+  // First-login onboarding is non-blocking, but dismiss it to keep selectors stable.
+  const skip = page.locator('[data-onboarding-skip="1"]');
+  if ((await skip.count()) > 0) {
+    await skip.click({ timeout: 1000 }).catch(() => {});
+  }
+  await expect(page.locator('#table-style')).toBeVisible();
+}
+
+async function openUserMenu(page) {
+  await page.locator('#userMenu').click();
+}
+
+async function fetchJsonViaPage(page, path) {
+  await page.goto(path);
+  const bodyText = await page.locator('body').innerText();
+  return JSON.parse(bodyText.trim());
+}
+
+test.describe('Rsyslog WebUI - landing', () => {
+  test('unauthenticated / shows marketing and Sign in', async ({ page }) => {
+    await page.goto('/logout.php');
+    await page.goto('/');
+    await expect(page.getByRole('link', { name: 'Sign in' })).toBeVisible();
+    await expect(page.locator('#table-style')).toHaveCount(0);
+  });
+
+  test('login shows Forgot password link', async ({ page }) => {
+    await page.goto('/logout.php');
+    await page.goto('/login.php');
+    await expect(page.getByRole('link', { name: 'Forgot password?' })).toBeVisible();
+    await page.getByRole('link', { name: 'Forgot password?' }).click();
+    await expect(page.getByRole('heading', { name: 'Password reset' })).toBeVisible();
+    await expect(page).toHaveURL(/password-reset\.php/);
+  });
+
+  test('password-reset respects dark mode localStorage (dark)', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('darkSwitch', 'dark');
+    });
+    await page.goto('/password-reset.php');
+    await expect(page.locator('html')).toHaveAttribute('data-bs-theme', 'dark');
+    await expect(page.locator('body')).toHaveAttribute('data-theme', 'dark');
+  });
+
+  test('password-reset defaults to light mode', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.removeItem('darkSwitch');
+    });
+    await page.goto('/password-reset.php');
+    await expect(page.locator('html')).toHaveAttribute('data-bs-theme', 'light');
+    await expect(page.locator('body')).not.toHaveAttribute('data-theme', 'dark');
+  });
+});
+
+test.describe('Rsyslog WebUI - end-to-end', () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page);
+  });
+
+  test('navbar shows sign out when auth is enabled', async ({ page }) => {
+    await openUserMenu(page);
+    await expect(page.locator('a.dropdown-item[href="logout.php"]')).toBeVisible();
+  });
+
+  test('admin sees Admin link to directory', async ({ page }) => {
+    await openUserMenu(page);
+    await expect(page.getByRole('link', { name: 'Admin' })).toBeVisible();
+  });
+
+  test('admin directory page loads with account table', async ({ page }) => {
+    await page.goto('/admin/users.php');
+    await expect(page.getByRole('heading', { name: 'Directory' })).toBeVisible();
+    await expect(page.locator('a.dropdown-item[href="../logout.php"]')).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Create user' })).toBeVisible();
+    await expect(page.locator('table tbody tr').first()).toBeVisible();
+  });
+
+  test('admin can update a local username (temp user cleaned up)', async ({ page }) => {
+    await page.goto('/admin/users.php');
+
+    const ts = Date.now() % 1000000;
+    const createdUsername = `e2e_user_${ts}`;
+    const createdPassword = `E2Epass${ts}`;
+    const updatedUsername = `e2e_user_updated_${ts}`;
+
+    // Create a temp local user so the test does not rely on any existing non-admin users.
+    await page.locator('input#username').fill(createdUsername);
+    await page.locator('input#password').fill(createdPassword);
+    await page.locator('#role_new').selectOption('user');
+    await page.getByRole('button', { name: 'Create user' }).click();
+    await expect(page.locator('.alert-success')).toContainText('User created.');
+
+    // Update the username for the newly created row.
+    const createdRow = page.locator('table tbody tr').filter({ hasText: createdUsername });
+    await expect(createdRow.locator('input[name="username_new"]')).toBeVisible();
+    await createdRow.locator('input[name="username_new"]').fill(updatedUsername);
+    await createdRow.locator('button:has-text("Change")').click();
+    await expect(page.locator('.alert-success')).toContainText('Username updated.');
+
+    await expect(page.locator('table tbody tr div.fw-medium', { hasText: updatedUsername })).toHaveCount(1);
+
+    // Delete the temp user so it doesn't remain in the admin directory.
+    const updatedRow = page.locator('table tbody tr').filter({ hasText: updatedUsername });
+    page.once('dialog', async (dialog) => {
+      await dialog.accept();
+    });
+    await updatedRow.locator('button:has-text("Delete")').click();
+
+    await expect(page.locator('.alert-success')).toContainText('User deleted.');
+    await expect(page.locator('table tbody tr').filter({ hasText: updatedUsername })).toHaveCount(0);
+  });
+
+  test('loads the events table and renders at least one row', async ({ page }) => {
+    // Bootstrap Table renders rows into the tbody asynchronously.
+    const rows = page.locator('#table-style tbody tr');
+    await expect(rows.first()).toBeVisible();
+    expect(await rows.count()).toBeGreaterThan(0);
+  });
+
+  test('keyword search (q=) filters by message content and keeps UI/API consistent', async ({ page }) => {
+    const keyword = 'Connection refused';
+
+    const apiRows = await fetchJsonViaPage(
+      page,
+      `/json/events.php?q=${encodeURIComponent(keyword)}`
+    );
+    expect(apiRows.length).toBeGreaterThan(0);
+
+    await page.goto('/');
+
+    // Live search (debounced): no need to click Reload.
+    await page.locator('#txtSearch').fill(keyword);
+    const rows = page.locator('#table-style tbody tr');
+    await expect(rows).toHaveCount(apiRows.length, { timeout: 15_000 });
+    await expect(page.locator('#table-style tbody')).toContainText(keyword);
+  });
+
+  test('keyword search matches SysLogTag when not present in message (e.g. nginx)', async ({ page }) => {
+    const tag = 'nginx';
+    const apiRows = await fetchJsonViaPage(page, `/json/events.php?q=${encodeURIComponent(tag)}`);
+    expect(apiRows.length).toBeGreaterThan(0);
+
+    await page.goto('/');
+    await page.locator('#txtSearch').fill(tag);
+    const rows = page.locator('#table-style tbody tr');
+    await expect(rows).toHaveCount(apiRows.length, { timeout: 15_000 });
+    await expect(page.locator('#table-style tbody')).toContainText(tag);
+  });
+
+  test('severity filterset (ERROR) filters table via search', async ({ page }) => {
+    // On initial load, getSummary() runs and populates progress bars.
+    const pgError = page.locator('#pgError');
+    await expect(pgError).toBeVisible();
+
+    // Ensure width is set to something non-zero.
+    await page.waitForFunction(() => {
+      const el = document.querySelector('#pgError');
+      if (!el) return false;
+      const w = el.style.width;
+      return w && w !== '0%' && w !== '0';
+    });
+
+    // Same filter as clicking the Error segment (narrow bars make coordinate clicks flaky).
+    await page.locator('#txtSearch').fill('"Severity"="ERROR" ');
+
+    await expect(page.locator('#table-style tbody')).toContainText(
+      'Connection refused occurred',
+      { timeout: 15_000 }
+    );
+  });
+
+  test('row click expands to show full message safely', async ({ page }) => {
+    const firstRow = page.locator('#table-style tbody tr').first();
+    await firstRow.click();
+
+    // Expanded message row uses a <td> with class "expandedMessage"
+    const expanded = page.locator('td.expandedMessage');
+    await expect(expanded).toBeVisible();
+    await expect(expanded).not.toBeEmpty();
+  });
+
+  test('account security page renders menu + sections', async ({ page }) => {
+    await page.goto('/account/security.php');
+
+    // Account security page no longer includes a section navigation menu.
+    await expect(page.locator('#accountSecurityMenu')).toHaveCount(0);
+
+    // Consistent logout control.
+    await expect(page.locator('a.dropdown-item[href="../logout.php"]')).toHaveCount(1);
+
+    await expect(page.getByRole('heading', { name: 'Account security' })).toBeVisible();
+    await expect(page.locator('h2#email-section')).toBeVisible();
+    // Email MFA requires Entra + Graph mail to be configured.
+    await expect(page.locator('h2#email-mfa-section')).toHaveCount(0);
+    await expect(page.locator('h2#totp-section')).toBeVisible();
+    await expect(page.locator('h2#passkeys-section')).toBeVisible();
+  });
+
+  test('signed-in landing hides sign-in button and shows sign out', async ({ page }) => {
+    // Render the landing partial directly to validate the signed-in UX.
+    await page.goto('/includes/partials/landing.php');
+
+    // Signed-in landing should not show the public "Sign in" CTA.
+    await expect(page.getByRole('link', { name: 'Sign in' })).toHaveCount(0);
+
+    // Account menu should offer sign out.
+    await expect(page.locator('a.dropdown-item[href="logout.php"]')).toHaveCount(1);
+  });
+
+  test('account security TOTP start enrollment (no fatal errors)', async ({ page }) => {
+    await page.goto('/account/security.php');
+
+    const start = page.getByRole('button', { name: 'Start enrollment' });
+    await expect(start).toBeVisible();
+    await start.click();
+
+    await expect(page.getByText('Scan the QR code')).toBeVisible();
+    await expect(page.locator('img[alt="TOTP QR code"]')).toBeVisible();
+  });
+
+  test('admin settings-entra loads for admin users', async ({ page }) => {
+    await page.goto('/admin/settings-entra.php');
+
+    await expect(page.getByRole('heading', { name: 'Microsoft Entra ID' })).toBeVisible();
+    await expect(page.locator('#copyCallback')).toBeVisible();
+    await expect(page.getByText('Configuration')).toBeVisible();
+  });
+
+  test('admin settings-entra rejects invalid tenant id', async ({ page }) => {
+    const tenantId = 'not-a-guid';
+    const clientId = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+
+    await page.goto('/admin/settings-entra.php');
+    await page.locator('#azEn').uncheck();
+    await page.locator('#tenant').fill(tenantId);
+    await page.locator('#client').fill(clientId);
+
+    await page.getByRole('button', { name: 'Save settings' }).click();
+    await expect(page.locator('.alert-danger')).toContainText('Directory (tenant) ID must be a GUID.');
+  });
+
+  test('admin settings-entra rejects invalid graph mail sender', async ({
+    page,
+  }) => {
+    const tenantId = '3f2504e0-4f89-11d3-9a0c-0305e82c3301';
+    const clientId = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+
+    await page.goto('/admin/settings-entra.php');
+    await page.locator('#azEn').uncheck();
+    await page.locator('#tenant').fill(tenantId);
+    await page.locator('#client').fill(clientId);
+    await page.locator('#gms').fill('not-an-email');
+
+    await page.getByRole('button', { name: 'Save settings' }).click();
+    await expect(page.locator('.alert-danger')).toContainText(
+      'Graph mail sender must look like an email/UPN'
+    );
+  });
+
+  test('admin settings-entra requires required IDs when enabling', async ({
+    page,
+  }) => {
+    await page.goto('/admin/settings-entra.php');
+    await page.locator('#azEn').check();
+    await page.locator('#tenant').fill('');
+    await page.locator('#client').fill('');
+    await page.locator('#secret').fill('');
+
+    await page.getByRole('button', { name: 'Save settings' }).click();
+    await expect(page.locator('.alert-danger')).toContainText(
+      'Directory (tenant) ID is required to enable Microsoft sign-in.'
+    );
+  });
+
+  test('webauthn register-options returns JSON for logged in user', async ({ page }) => {
+    await page.goto('/account/security.php');
+    const html = await page.content();
+    const m = html.match(/var csrf\s*=\s*["']([^"']+)["']/);
+    expect(m).not.toBeNull();
+    const csrf = m[1];
+
+    const res = await page.request.get(
+      `/json/webauthn-register-options.php?csrf=${encodeURIComponent(csrf)}`
+    );
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.publicKey).toBeTruthy();
+    expect(body.publicKey.challenge).toBeTruthy();
+    expect(body.publicKey.user.id).toBeTruthy();
+  });
+
+  test('webauthn register-verify rejects invalid credential payload', async ({
+    page,
+  }) => {
+    await page.goto('/account/security.php');
+    const html = await page.content();
+    const m = html.match(/var csrf\s*=\s*["']([^"']+)["']/);
+    expect(m).not.toBeNull();
+    const csrf = m[1];
+
+    // Call register-options first so server-side ceremony state exists.
+    const optsRes = await page.request.get(
+      `/json/webauthn-register-options.php?csrf=${encodeURIComponent(csrf)}`
+    );
+    expect(optsRes.status()).toBe(200);
+
+    const res = await page.request.post('/json/webauthn-register-verify.php', {
+      headers: { 'Content-Type': 'application/json' },
+      data: JSON.stringify({
+        csrf,
+        credential: {},
+        friendlyName: 'Passkey',
+      }),
+    });
+
+    expect(res.status()).toBe(400);
+    const body = await res.json();
+    expect(body.ok).toBe(false);
+    expect(body.error).toBe('verify_failed');
+
+    // Regression: some browsers/clients may send binary fields as JSON arrays.
+    // Ensure we never fatal during decoding; still return verify_failed.
+    const res2 = await page.request.post('/json/webauthn-register-verify.php', {
+      headers: { 'Content-Type': 'application/json' },
+      data: JSON.stringify({
+        csrf,
+        credential: {
+          rawId: [1, 2, 3],
+          response: {
+            clientDataJSON: [4, 5, 6],
+            attestationObject: [7, 8, 9],
+          },
+        },
+        friendlyName: 'Passkey',
+      }),
+    });
+
+    expect(res2.status()).toBe(400);
+    const body2 = await res2.json();
+    expect(body2.ok).toBe(false);
+    expect(body2.error).toBe('verify_failed');
+  });
+
+  test('dark mode toggle persists across reload', async ({ page }) => {
+    const toggle = page.locator('#darkSwitch');
+    await expect(toggle).toBeVisible();
+
+    // Avoid label pointer-event interception by toggling checked state in-page
+    // and dispatching the same `change` event the app listens for.
+    await toggle.evaluate((el) => {
+      el.checked = false;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await expect(page.locator('html')).toHaveAttribute('data-bs-theme', 'light');
+
+    await toggle.evaluate((el) => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await expect(page.locator('html')).toHaveAttribute('data-bs-theme', 'dark');
+    await expect(page.locator('body')).toHaveAttribute('data-theme', 'dark');
+
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-bs-theme', 'dark');
+    await expect(page.locator('body')).toHaveAttribute('data-theme', 'dark');
+  });
+
+  test('dark mode darkens bootstrap-table container and header cells', async ({ page }) => {
+    const toggle = page.locator('#darkSwitch');
+    const container = page.locator('.bootstrap-table .fixed-table-container').first();
+    await expect(container).toBeVisible();
+
+    /** @param {import('@playwright/test').Locator} loc */
+    async function avgRgb(loc) {
+      return loc.evaluate((el) => {
+        const bg = window.getComputedStyle(el).backgroundColor;
+        const m = bg.match(/[\d.]+/g);
+        if (!m || m.length < 3) return null;
+        return (
+          (Number(m[0]) + Number(m[1]) + Number(m[2])) / 3
+        );
+      });
+    }
+
+    await toggle.evaluate((el) => {
+      el.checked = false;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await expect(page.locator('html')).toHaveAttribute('data-bs-theme', 'light');
+    const lightContainer = await avgRgb(container);
+    const lightTh = await avgRgb(
+      page.locator('.fixed-table-container thead th .th-inner').first()
+    );
+    expect(lightContainer).not.toBeNull();
+    expect(lightTh).not.toBeNull();
+
+    await toggle.evaluate((el) => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await expect(page.locator('html')).toHaveAttribute('data-bs-theme', 'dark');
+    const darkContainer = await avgRgb(container);
+    const darkTh = await avgRgb(
+      page.locator('.fixed-table-container thead th .th-inner').first()
+    );
+    expect(darkContainer).not.toBeNull();
+    expect(darkTh).not.toBeNull();
+
+    // Header should be clearly dark (Bootstrap dark table bg ~rgb(33,37,41)).
+    expect(darkTh).toBeLessThan(90);
+    // Container may be transparent in light mode (avg ~0); require dark paint or darker than before.
+    expect(darkContainer).toBeLessThan(90);
+    if (lightTh !== null && lightTh > 60) {
+      expect(darkTh).toBeLessThan(lightTh - 20);
+    }
+    if (lightContainer !== null && lightContainer > 60) {
+      expect(darkContainer).toBeLessThan(lightContainer - 20);
+    }
+  });
+
+  test('API endpoints return JSON for default (unfiltered) requests', async ({ page }) => {
+    // Navigation-based JSON fetch for auth-aware endpoints:
+    const events = await fetchJsonViaPage(page, '/json/events.php');
+    expect(Array.isArray(events)).toBeTruthy();
+    expect(events.length).toBeGreaterThan(0);
+
+    const summary = await fetchJsonViaPage(page, '/json/events_summary.php');
+    expect(Array.isArray(summary)).toBeTruthy();
+    expect(summary.length).toBeGreaterThan(0);
+  });
+});
+

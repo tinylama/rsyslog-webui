@@ -1,0 +1,8 @@
+node_modules
+vendor
+.git
+test-results
+.playwright
+*.md
+.env
+.env.tls

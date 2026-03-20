@@ -1,0 +1,63 @@
+services:
+  db:
+    image: mysql:8.0
+    command: ["--default-authentication-plugin=mysql_native_password"]
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: rsyslogdb
+      MYSQL_USER: rsyslog
+      MYSQL_PASSWORD: rsyslog
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${MYSQL_HOST_PORT:-3307}:3306"
+
+  rsyslog:
+    build: ./docker/rsyslog
+    depends_on:
+      - db
+    environment:
+      RSYSLOG_DB_HOST: db
+      RSYSLOG_DB_PORT: 3306
+      RSYSLOG_DB_NAME: rsyslogdb
+      RSYSLOG_DB_USER: rsyslog
+      RSYSLOG_DB_PASSWORD: rsyslog
+      RSYSLOG_INGEST_PORT: 5514
+    ports:
+      - "${RSYSLOG_INGEST_PORT:-5514}:5514/tcp"
+      - "${RSYSLOG_INGEST_PORT:-5514}:5514/udp"
+
+  web:
+    build: .
+    # Mount source so JS/CSS/PHP edits apply without rebuilding (e2e + local dev).
+    volumes:
+      - .:/var/www/html
+      # Keep Composer dependencies when bind-mounting the repo (vendor/ is gitignored).
+      - web-vendor:/var/www/html/vendor
+    depends_on:
+      - db
+    environment:
+      RSYSLOG_DB_HOST: db
+      RSYSLOG_DB_NAME: rsyslogdb
+      RSYSLOG_DB_USER: rsyslog
+      RSYSLOG_DB_PASSWORD: rsyslog
+      RSYSLOG_SITE_NAME: System Logs
+      RSYSLOG_KEEP_DAYS: 90
+      RSYSLOG_AUTH_ENABLED: "1"
+      RSYSLOG_SESSION_SECRET: "dev-session-secret-change-me"
+      RSYSLOG_ADMIN_USERNAME: "admin"
+      RSYSLOG_ADMIN_PASSWORD: "admin123"
+      # Optional Microsoft Entra ID (see README):
+      # RSYSLOG_AZURE_ENABLED: "1"
+      # RSYSLOG_AZURE_TENANT_ID: "your-tenant-guid"
+      # RSYSLOG_AZURE_CLIENT_ID: "your-app-client-id"
+      # RSYSLOG_AZURE_CLIENT_SECRET: "your-secret"
+      # RSYSLOG_AZURE_REDIRECT_URI: "https://your-host/auth/azure/callback.php"
+      # RSYSLOG_AZURE_ADMIN_GROUP_ID: "optional-group-object-id"
+    ports:
+      - "${WEB_PORT:-8080}:80"
+
+volumes:
+  db-data:
+  web-vendor:

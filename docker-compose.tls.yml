@@ -1,0 +1,106 @@
+# HTTPS stack: Traefik terminates TLS with Let's Encrypt (DNS-01 via Cloudflare).
+#
+# Use this file instead of publishing the web container directly:
+#   cp docker/tls.env.example .env.tls
+#   # edit .env.tls: TLS_DOMAIN, ACME_EMAIL, CF_DNS_API_TOKEN (DNS:Edit on the zone)
+#   docker compose --env-file .env.tls -f docker-compose.tls.yml up -d --build
+#
+# Stop any existing `docker compose up` that binds WEB_PORT first (port 80/443 required).
+# See docker/TLS.md for Cloudflare token scopes and reverse-proxy notes.
+
+name: rsyslog-webui
+
+services:
+  db:
+    image: mysql:8.0
+    command: ["--default-authentication-plugin=mysql_native_password"]
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: rsyslogdb
+      MYSQL_USER: rsyslog
+      MYSQL_PASSWORD: rsyslog
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${MYSQL_HOST_PORT:-3308}:3306"
+    networks:
+      - internal
+
+  rsyslog:
+    build: ./docker/rsyslog
+    depends_on:
+      - db
+    ports:
+      - "${RSYSLOG_INGEST_PORT:-5514}:5514/tcp"
+      - "${RSYSLOG_INGEST_PORT:-5514}:5514/udp"
+    networks:
+      - internal
+
+  web:
+    build: .
+    depends_on:
+      - db
+    environment:
+      RSYSLOG_DB_HOST: db
+      RSYSLOG_DB_NAME: rsyslogdb
+      RSYSLOG_DB_USER: rsyslog
+      RSYSLOG_DB_PASSWORD: rsyslog
+      RSYSLOG_SITE_NAME: System Logs
+      RSYSLOG_KEEP_DAYS: 90
+      RSYSLOG_AUTH_ENABLED: "1"
+      RSYSLOG_SESSION_SECRET: ${RSYSLOG_SESSION_SECRET:-change-me-in-production}
+      RSYSLOG_ADMIN_USERNAME: ${RSYSLOG_ADMIN_USERNAME:-admin}
+      RSYSLOG_ADMIN_PASSWORD: ${RSYSLOG_ADMIN_PASSWORD:-admin123}
+    networks:
+      - internal
+      - edge
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=rsyslog-webui_edge
+      # Traefik expects backticks: Host(`example.com`)
+      - "traefik.http.routers.rsyslog.rule=Host(`${TLS_DOMAIN}`)"
+      - traefik.http.routers.rsyslog.entrypoints=websecure
+      - traefik.http.routers.rsyslog.tls=true
+      - traefik.http.routers.rsyslog.tls.certresolver=cf
+      - traefik.http.services.rsyslog.loadbalancer.server.port=80
+
+  traefik:
+    image: traefik:v3.3
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-letsencrypt:/letsencrypt
+      - ./docker/traefik-dynamic.tls.yml:/etc/traefik/dynamic/traefik-dynamic.tls.yml:ro
+    command:
+      - --providers.docker=false
+      - --log.level=INFO
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --certificatesresolvers.cf.acme.dnschallenge=true
+      - --certificatesresolvers.cf.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.cf.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.cf.acme.storage=/letsencrypt/acme.json
+    networks:
+      - edge
+
+networks:
+  internal:
+    driver: bridge
+  edge:
+    driver: bridge
+
+volumes:
+  db-data:
+  traefik-letsencrypt:
