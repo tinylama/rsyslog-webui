@@ -75,7 +75,11 @@ docker compose up --build -d
 
 ### Desktop
 
-![Desktop](/images/screenshot.png?raw=true "Desktop")
+![Desktop](/images/screenshot.jpg?raw=true "Desktop")
+
+### Admin Panel
+
+![Desktop](/images/admin.jpg?raw=true "Admin Panel")
 
 ---
 
