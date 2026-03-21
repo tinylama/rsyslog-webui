@@ -29,10 +29,38 @@ if (session_status() === PHP_SESSION_NONE) {
 	session_start();
 }
 
+function auth_apply_security_headers(): void
+{
+	if (headers_sent()) {
+		return;
+	}
+	header('X-Frame-Options: DENY');
+	header('X-Content-Type-Options: nosniff');
+	header('Referrer-Policy: strict-origin-when-cross-origin');
+	header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+}
+
+auth_apply_security_headers();
+
 function auth_is_enabled(): bool
 {
 	global $auth_enabled;
 	return (bool) $auth_enabled;
+}
+
+function auth_request_path(): string
+{
+	$path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+	return is_string($path) && $path !== '' ? $path : '/';
+}
+
+function auth_request_user_agent(): string
+{
+	$ua = isset($_SERVER['HTTP_USER_AGENT']) ? trim((string) $_SERVER['HTTP_USER_AGENT']) : '';
+	if ($ua === '') {
+		return '';
+	}
+	return mb_substr($ua, 0, 255);
 }
 
 /**
@@ -49,6 +77,67 @@ function auth_is_running_in_docker_dev(): bool
 		return true;
 	}
 	return false;
+}
+
+/**
+ * Playwright E2E bootstrap: exchange a per-run token (filesystem, bind-mounted into the container)
+ * for an admin session. Only active inside Docker dev when RSYSLOG_E2E_ENABLED=1.
+ *
+ * @see json/e2e-bootstrap.php
+ * @see docs/testing.md
+ */
+function auth_e2e_bootstrap_feature_enabled(): bool
+{
+	if (!auth_is_running_in_docker_dev()) {
+		return false;
+	}
+	$v = getenv('RSYSLOG_E2E_ENABLED');
+	if ($v === false || $v === null || trim((string) $v) === '') {
+		return false;
+	}
+	$s = strtolower(trim((string) $v));
+	return $s === '1' || $s === 'true' || $s === 'yes' || $s === 'on';
+}
+
+function auth_e2e_bootstrap_token_path(): string
+{
+	$fromEnv = getenv('RSYSLOG_E2E_TOKEN_FILE');
+	if (is_string($fromEnv) && trim($fromEnv) !== '') {
+		return trim($fromEnv);
+	}
+	return __DIR__ . '/tests/e2e/.e2e-bootstrap-token';
+}
+
+function auth_e2e_read_expected_bootstrap_token(): string
+{
+	$path = auth_e2e_bootstrap_token_path();
+	if (!is_readable($path)) {
+		return '';
+	}
+	$raw = @file_get_contents($path);
+	if (!is_string($raw)) {
+		return '';
+	}
+	$t = trim($raw);
+	// Minimum length so trivial/guessable tokens are rejected.
+	if (strlen($t) < 32) {
+		return '';
+	}
+	return $t;
+}
+
+/**
+ * Login rate limiting (failed-attempt lockout). Set env RSYSLOG_LOGIN_RATE_LIMIT=0 in local dev compose
+ * so Playwright runs are not blocked after repeated failed attempts; omit in production.
+ */
+function auth_login_rate_limit_enabled(): bool
+{
+	$v = getenv('RSYSLOG_LOGIN_RATE_LIMIT');
+	if ($v === false || $v === null || trim((string) $v) === '') {
+		return true;
+	}
+	$s = strtolower(trim((string) $v));
+	return !($s === '0' || $s === 'false' || $s === 'off' || $s === 'no');
 }
 
 /**
@@ -265,6 +354,7 @@ function auth_https_whitelist_enforce(): void
 
 	// If enabled but list is empty, block everything.
 	if ($cidrs === []) {
+		auth_log_access_decision('https_whitelist', 'blocked', 'https_whitelist', 'no_entries');
 		http_response_code(403);
 		header('Content-Type: text/plain; charset=utf-8');
 		echo 'Forbidden';
@@ -273,10 +363,12 @@ function auth_https_whitelist_enforce(): void
 
 	foreach ($cidrs as $cidr) {
 		if (auth_ip_in_cidr($clientIp, $cidr)) {
+			auth_log_access_decision('https_whitelist', 'allowed', 'https_whitelist', $cidr);
 			return;
 		}
 	}
 
+	auth_log_access_decision('https_whitelist', 'blocked', 'https_whitelist', 'ip_not_allowed');
 	http_response_code(403);
 	header('Content-Type: text/plain; charset=utf-8');
 	echo 'Forbidden';
@@ -325,6 +417,107 @@ function auth_db(): PDO
 	return $pdo;
 }
 
+function auth_local_mfa_required(): bool
+{
+	$v = $GLOBALS['local_mfa_required'] ?? false;
+	if (is_bool($v)) {
+		return $v;
+	}
+	if (is_string($v)) {
+		$s = strtolower(trim($v));
+		return $s === '1' || $s === 'true' || $s === 'yes';
+	}
+	return false;
+}
+
+/**
+ * Generic audit event writer.
+ *
+ * @param array<string,mixed> $fields
+ */
+function auth_insert_audit_row(string $table, array $fields): void
+{
+	if (!auth_is_enabled()) {
+		return;
+	}
+	if ($fields === []) {
+		return;
+	}
+	try {
+		$pdo = auth_db();
+		auth_ensure_audit_schema($pdo);
+		$cols = [];
+		$vals = [];
+		$params = [];
+		foreach ($fields as $k => $v) {
+			$key = trim((string) $k);
+			if ($key === '') {
+				continue;
+			}
+			$ph = ':' . $key;
+			$cols[] = '`' . str_replace('`', '', $key) . '`';
+			$vals[] = $ph;
+			$params[$ph] = is_scalar($v) || $v === null ? $v : json_encode($v, JSON_UNESCAPED_SLASHES);
+		}
+		if ($cols === []) {
+			return;
+		}
+		$sql = 'INSERT INTO ' . $table . ' (' . implode(', ', $cols) . ') VALUES (' . implode(', ', $vals) . ')';
+		$stmt = $pdo->prepare($sql);
+		$stmt->execute($params);
+	} catch (Throwable $e) {
+		// Best-effort audit logging should never block request flow.
+	}
+}
+
+function auth_log_signin_attempt(
+	?int $userId,
+	string $username,
+	string $provider,
+	string $outcome,
+	string $reason = '',
+	string $source = 'login'
+): void {
+	auth_insert_audit_row('SignInLogs', [
+		'UserID' => $userId,
+		'Username' => mb_substr($username, 0, 100),
+		'Provider' => mb_substr($provider, 0, 20),
+		'Outcome' => mb_substr($outcome, 0, 20),
+		'Reason' => mb_substr($reason, 0, 255),
+		'Source' => mb_substr($source, 0, 30),
+		'ClientIP' => mb_substr(auth_client_ip_for_whitelist(), 0, 45),
+		'UserAgent' => auth_request_user_agent(),
+		'RoutePath' => mb_substr(auth_request_path(), 0, 255),
+	]);
+}
+
+function auth_log_access_decision(string $area, string $decision, string $policy = '', string $detail = ''): void
+{
+	auth_insert_audit_row('AccessLogs', [
+		'Area' => mb_substr($area, 0, 100),
+		'RoutePath' => mb_substr(auth_request_path(), 0, 255),
+		'ClientIP' => mb_substr(auth_client_ip_for_whitelist(), 0, 45),
+		'Decision' => mb_substr($decision, 0, 20),
+		'PolicySource' => mb_substr($policy, 0, 100),
+		'Detail' => mb_substr($detail, 0, 255),
+		'UserAgent' => auth_request_user_agent(),
+		'UserID' => isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null,
+	]);
+}
+
+function auth_log_email_event(string $eventType, string $recipient, string $status, string $providerMessage = ''): void
+{
+	auth_insert_audit_row('EmailLogs', [
+		'EventType' => mb_substr($eventType, 0, 80),
+		'Recipient' => mb_substr($recipient, 0, 255),
+		'Status' => mb_substr($status, 0, 20),
+		'ProviderMessage' => mb_substr($providerMessage, 0, 255),
+		'ClientIP' => mb_substr(auth_client_ip_for_whitelist(), 0, 45),
+		'UserAgent' => auth_request_user_agent(),
+		'UserID' => isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null,
+	]);
+}
+
 /**
  * Add ExternalProvider / ExternalSubject for Azure SSO (idempotent).
  */
@@ -358,6 +551,147 @@ function auth_ensure_users_external_columns(PDO $pdo): void
 	$done = true;
 }
 
+function auth_ensure_audit_schema(PDO $pdo): void
+{
+	static $done = false;
+	if ($done) {
+		return;
+	}
+	$pdo->exec(
+		'CREATE TABLE IF NOT EXISTS SignInLogs (
+			ID bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
+			UserID int unsigned NULL,
+			Username varchar(100) NOT NULL DEFAULT \'\',
+			Provider varchar(20) NOT NULL DEFAULT \'local\',
+			Outcome varchar(20) NOT NULL,
+			Reason varchar(255) NOT NULL DEFAULT \'\',
+			Source varchar(30) NOT NULL DEFAULT \'login\',
+			ClientIP varchar(45) NOT NULL DEFAULT \'\',
+			UserAgent varchar(255) NOT NULL DEFAULT \'\',
+			RoutePath varchar(255) NOT NULL DEFAULT \'\',
+			CreatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			KEY idx_signin_created (CreatedAt),
+			KEY idx_signin_outcome (Outcome),
+			KEY idx_signin_user (UserID),
+			KEY idx_signin_provider (Provider)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+	);
+	$pdo->exec(
+		'CREATE TABLE IF NOT EXISTS AccessLogs (
+			ID bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
+			UserID int unsigned NULL,
+			Area varchar(100) NOT NULL DEFAULT \'\',
+			RoutePath varchar(255) NOT NULL DEFAULT \'\',
+			ClientIP varchar(45) NOT NULL DEFAULT \'\',
+			Decision varchar(20) NOT NULL,
+			PolicySource varchar(100) NOT NULL DEFAULT \'\',
+			Detail varchar(255) NOT NULL DEFAULT \'\',
+			UserAgent varchar(255) NOT NULL DEFAULT \'\',
+			CreatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			KEY idx_access_created (CreatedAt),
+			KEY idx_access_decision (Decision),
+			KEY idx_access_area (Area)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+	);
+	$pdo->exec(
+		'CREATE TABLE IF NOT EXISTS EmailLogs (
+			ID bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
+			UserID int unsigned NULL,
+			EventType varchar(80) NOT NULL,
+			Recipient varchar(255) NOT NULL DEFAULT \'\',
+			Status varchar(20) NOT NULL,
+			ProviderMessage varchar(255) NOT NULL DEFAULT \'\',
+			ClientIP varchar(45) NOT NULL DEFAULT \'\',
+			UserAgent varchar(255) NOT NULL DEFAULT \'\',
+			CreatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			KEY idx_email_created (CreatedAt),
+			KEY idx_email_status (Status),
+			KEY idx_email_event (EventType)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+	);
+	$pdo->exec(
+		'CREATE TABLE IF NOT EXISTS LoginRateLimit (
+			RateKey varchar(190) NOT NULL PRIMARY KEY,
+			Attempts int unsigned NOT NULL DEFAULT 0,
+			WindowStartedAt datetime NOT NULL,
+			BlockedUntil datetime NULL,
+			UpdatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+	);
+	$done = true;
+}
+
+function auth_login_rate_key(string $username, string $clientIp): string
+{
+	return mb_strtolower(trim($username)) . '|' . trim($clientIp);
+}
+
+/**
+ * @return array{blocked:bool,retry_after:int}
+ */
+function auth_login_rate_limit_state(PDO $pdo, string $username, string $clientIp): array
+{
+	auth_ensure_audit_schema($pdo);
+	$key = auth_login_rate_key($username, $clientIp);
+	$stmt = $pdo->prepare('SELECT BlockedUntil FROM LoginRateLimit WHERE RateKey = :k LIMIT 1');
+	$stmt->execute([':k' => $key]);
+	$blockedUntil = $stmt->fetchColumn();
+	if (!is_string($blockedUntil) || trim($blockedUntil) === '') {
+		return ['blocked' => false, 'retry_after' => 0];
+	}
+	$ts = strtotime($blockedUntil);
+	if ($ts === false) {
+		return ['blocked' => false, 'retry_after' => 0];
+	}
+	$retry = $ts - time();
+	if ($retry <= 0) {
+		return ['blocked' => false, 'retry_after' => 0];
+	}
+	return ['blocked' => true, 'retry_after' => $retry];
+}
+
+function auth_login_rate_limit_record_failure(PDO $pdo, string $username, string $clientIp): void
+{
+	auth_ensure_audit_schema($pdo);
+	$key = auth_login_rate_key($username, $clientIp);
+	$stmt = $pdo->prepare('SELECT Attempts, WindowStartedAt FROM LoginRateLimit WHERE RateKey = :k LIMIT 1');
+	$stmt->execute([':k' => $key]);
+	$row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+	$now = new DateTimeImmutable('now');
+	$windowStart = $now;
+	$attempts = 1;
+	if (is_array($row)) {
+		$windowTs = strtotime((string) ($row['WindowStartedAt'] ?? ''));
+		$withinWindow = $windowTs !== false && (time() - $windowTs) < 900;
+		$attempts = $withinWindow ? ((int) ($row['Attempts'] ?? 0) + 1) : 1;
+		$windowStart = $withinWindow ? (new DateTimeImmutable('@' . (string) $windowTs))->setTimezone(new DateTimeZone(date_default_timezone_get())) : $now;
+	}
+
+	$blockedUntil = null;
+	if ($attempts >= 8) {
+		$blockedUntil = $now->modify('+5 minutes')->format('Y-m-d H:i:s');
+	}
+	$ins = $pdo->prepare(
+		'INSERT INTO LoginRateLimit (RateKey, Attempts, WindowStartedAt, BlockedUntil)
+		 VALUES (:k, :a, :ws, :bu)
+		 ON DUPLICATE KEY UPDATE Attempts = VALUES(Attempts), WindowStartedAt = VALUES(WindowStartedAt), BlockedUntil = VALUES(BlockedUntil)'
+	);
+	$ins->execute([
+		':k' => $key,
+		':a' => $attempts,
+		':ws' => $windowStart->format('Y-m-d H:i:s'),
+		':bu' => $blockedUntil,
+	]);
+}
+
+function auth_login_rate_limit_clear(PDO $pdo, string $username, string $clientIp): void
+{
+	auth_ensure_audit_schema($pdo);
+	$key = auth_login_rate_key($username, $clientIp);
+	$pdo->prepare('DELETE FROM LoginRateLimit WHERE RateKey = :k')->execute([':k' => $key]);
+}
+
 function auth_bootstrap_once(): void
 {
 	if (!auth_is_enabled()) return;
@@ -368,6 +702,7 @@ function auth_bootstrap_once(): void
 		auth_ensure_users_onboarding_column($pdo);
 		auth_ensure_session_timeout_column($pdo);
 		auth_ensure_mfa_schema($pdo);
+		auth_ensure_audit_schema($pdo);
 
 		// Ensure base roles exist.
 		$pdo->exec("INSERT INTO Roles (Name) VALUES ('admin') ON DUPLICATE KEY UPDATE Name=Name");
@@ -511,6 +846,7 @@ function require_login(bool $json = false): void
 	auth_bootstrap_once();
 
 	if (!isset($_SESSION['user_id'])) {
+		auth_log_access_decision('auth', 'blocked', 'require_login', 'missing_session');
 		if ($json) {
 			http_response_code(401);
 			header('Content-Type: application/json');
@@ -614,6 +950,7 @@ function require_admin(bool $json = false): void
 
 	$me = auth_current_user();
 	if ($me === null || ($me['role'] ?? '') !== 'admin') {
+		auth_log_access_decision('admin', 'blocked', 'role_check', 'admin_role_required');
 		if ($json) {
 			http_response_code(403);
 			header('Content-Type: application/json');

@@ -54,9 +54,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			$lastRunResult = $run;
 			app_settings_save($pdo, 'logs_retention_last_run_ts', (string) time(), false);
 			$success = 'Retention run completed.';
+			if ((int) ($run['total_deleted'] ?? 0) > 0) {
+				log_maintenance_analyze_tables($pdo, ['SystemEvents']);
+			}
 		} elseif ($action === 'clear_logs') {
 			$deleted = log_maintenance_clear_logs($pdo);
-			$success = 'Logs cleared. Rows removed: ' . $deleted . '.';
+			$success = 'Logs cleared. Rows removed: ' . $deleted . ' (table stats refreshed so size figures should match).';
+		} elseif ($action === 'clear_audit_logs') {
+			$want = [];
+			if (isset($_POST['audit_clear_signin']) && $_POST['audit_clear_signin'] === '1') {
+				$want[] = 'SignInLogs';
+			}
+			if (isset($_POST['audit_clear_access']) && $_POST['audit_clear_access'] === '1') {
+				$want[] = 'AccessLogs';
+			}
+			if (isset($_POST['audit_clear_email']) && $_POST['audit_clear_email'] === '1') {
+				$want[] = 'EmailLogs';
+			}
+			if ($want === []) {
+				$error = 'Select at least one audit log type to clear.';
+			} else {
+				$actorId = is_array($me) && isset($me['id']) ? (int) $me['id'] : null;
+				if ($actorId !== null && $actorId <= 0) {
+					$actorId = null;
+				}
+				$actorName = is_array($me)
+					? (string) ($me['username'] ?? $me['display_name'] ?? 'admin')
+					: 'admin';
+				log_maintenance_clear_audit_tables($pdo, $want, $actorId, $actorName);
+				$success = 'Audit logs cleared (' . implode(', ', $want) . '). A new row in Access logs records who cleared what.';
+			}
 		} elseif ($action === 'clear_database_data') {
 			$confirm = trim((string) ($_POST['confirm_text'] ?? ''));
 			if ($confirm !== 'CLEAR DATABASE') {
@@ -79,6 +106,30 @@ $stats = $statsStmt ? $statsStmt->fetch(PDO::FETCH_ASSOC) : ['c' => 0, 'oldest' 
 $rowCount = (int) ($stats['c'] ?? 0);
 $oldest = isset($stats['oldest']) ? (string) $stats['oldest'] : '';
 $newest = isset($stats['newest']) ? (string) $stats['newest'] : '';
+$dbSizeMb = null;
+$tableSizes = [];
+try {
+	$dbName = (string) $pdo->query('SELECT DATABASE()')->fetchColumn();
+	if ($dbName !== '') {
+		$sizeStmt = $pdo->prepare(
+			'SELECT TABLE_NAME, ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024, 2) AS size_mb
+			 FROM information_schema.TABLES
+			 WHERE TABLE_SCHEMA = :db
+			 ORDER BY (DATA_LENGTH + INDEX_LENGTH) DESC'
+		);
+		$sizeStmt->execute([':db' => $dbName]);
+		$tableSizes = $sizeStmt->fetchAll(PDO::FETCH_ASSOC);
+		$sumStmt = $pdo->prepare(
+			'SELECT ROUND(SUM(DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024, 2)
+			 FROM information_schema.TABLES WHERE TABLE_SCHEMA = :db'
+		);
+		$sumStmt->execute([':db' => $dbName]);
+		$sumVal = $sumStmt->fetchColumn();
+		$dbSizeMb = is_numeric($sumVal) ? (float) $sumVal : null;
+	}
+} catch (Throwable $e) {
+	$dbSizeMb = null;
+}
 $siteTitle = htmlspecialchars($site_name ?? 'System Logs', ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
@@ -107,6 +158,17 @@ $siteTitle = htmlspecialchars($site_name ?? 'System Logs', ENT_QUOTES, 'UTF-8');
 				<div class="card-body d-flex align-items-center justify-content-between">
 					<span class="text-muted small">Current logs</span>
 					<span class="fs-4 fw-semibold"><?php echo $rowCount; ?></span>
+				</div>
+			</div>
+		</div>
+		<div class="col-12 col-md-4">
+			<div class="card border-0 bg-body-secondary h-100">
+				<div class="card-body d-flex flex-column justify-content-center h-100">
+					<div class="d-flex align-items-center justify-content-between">
+						<span class="text-muted small">Database size</span>
+						<span class="fs-5 fw-semibold"><?php echo $dbSizeMb !== null ? number_format($dbSizeMb, 2) . ' MB' : '-'; ?></span>
+					</div>
+					<p class="text-muted small mb-0 mt-2">MySQL <code>information_schema</code> allocation (not raw OS file size). After clearing logs we run <strong>OPTIMIZE</strong>/<strong>ANALYZE</strong> so these figures stay aligned with empty tables.</p>
 				</div>
 			</div>
 		</div>
@@ -170,11 +232,60 @@ $siteTitle = htmlspecialchars($site_name ?? 'System Logs', ENT_QUOTES, 'UTF-8');
 				Oldest log: <code><?php echo htmlspecialchars($oldest !== '' ? $oldest : '-', ENT_QUOTES, 'UTF-8'); ?></code>,
 				Newest log: <code><?php echo htmlspecialchars($newest !== '' ? $newest : '-', ENT_QUOTES, 'UTF-8'); ?></code>
 			</div>
-			<form method="post" class="d-inline-block me-2 mb-2" onsubmit="return confirm('Clear all logs from SystemEvents?');">
+			<form method="post" class="d-inline-block me-2 mb-2" onsubmit="return confirm('Remove all rows from SystemEvents? Table will be truncated and optimized so size stats refresh.');">
 				<input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 				<input type="hidden" name="action" value="clear_logs">
 				<button type="submit" class="btn btn-outline-danger">Clear logs</button>
 			</form>
+			<span class="small text-muted">Truncates <code>SystemEvents</code>, then <strong>OPTIMIZE</strong>/<strong>ANALYZE</strong> so the size column matches an empty table.</span>
+
+			<hr class="my-4">
+
+			<h3 class="h6 mb-2">Clear admin audit logs</h3>
+			<p class="small text-muted mb-3">Removes rows from sign-in, access, and/or email audit tables (Admin &rarr; Logs). After clearing, a single <strong>Access logs</strong> row is written with area <code>maintenance</code> describing which tables were purged and by whom.</p>
+			<form method="post" class="border rounded p-3 bg-body-tertiary" onsubmit="return confirm('Clear the selected audit log tables? One new access-log entry will record this action.');">
+				<input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+				<input type="hidden" name="action" value="clear_audit_logs">
+				<div class="row g-2 mb-3">
+					<div class="col-12 col-md-4">
+						<div class="form-check">
+							<input class="form-check-input" type="checkbox" name="audit_clear_signin" value="1" id="audit_clear_signin">
+							<label class="form-check-label" for="audit_clear_signin">Sign-in logs</label>
+						</div>
+					</div>
+					<div class="col-12 col-md-4">
+						<div class="form-check">
+							<input class="form-check-input" type="checkbox" name="audit_clear_access" value="1" id="audit_clear_access">
+							<label class="form-check-label" for="audit_clear_access">Access logs</label>
+						</div>
+					</div>
+					<div class="col-12 col-md-4">
+						<div class="form-check">
+							<input class="form-check-input" type="checkbox" name="audit_clear_email" value="1" id="audit_clear_email">
+							<label class="form-check-label" for="audit_clear_email">Email logs</label>
+						</div>
+					</div>
+				</div>
+				<button type="submit" class="btn btn-outline-danger btn-sm">Clear selected audit logs</button>
+			</form>
+			<?php if ($tableSizes !== []): ?>
+				<div class="mt-3">
+					<div class="small text-muted mb-2">Top table sizes</div>
+					<div class="table-responsive">
+						<table class="table table-sm small mb-0">
+							<thead><tr><th>Table</th><th class="text-end">Size (MB)</th></tr></thead>
+							<tbody>
+							<?php foreach (array_slice($tableSizes, 0, 8) as $t): ?>
+								<tr>
+									<td><?php echo htmlspecialchars((string) ($t['TABLE_NAME'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
+									<td class="text-end"><?php echo htmlspecialchars((string) ($t['size_mb'] ?? '0'), ENT_QUOTES, 'UTF-8'); ?></td>
+								</tr>
+							<?php endforeach; ?>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			<?php endif; ?>
 		</div>
 	</div>
 

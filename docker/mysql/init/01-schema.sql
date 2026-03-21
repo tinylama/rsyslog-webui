@@ -81,3 +81,60 @@ CREATE TABLE IF NOT EXISTS MfaEmailChallenges (
   KEY idx_mfa_email_user_exp (UserID, ExpiresAt)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS SignInLogs (
+  ID bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  UserID int unsigned NULL,
+  Username varchar(100) NOT NULL DEFAULT '',
+  Provider varchar(20) NOT NULL DEFAULT 'local',
+  Outcome varchar(20) NOT NULL,
+  Reason varchar(255) NOT NULL DEFAULT '',
+  Source varchar(30) NOT NULL DEFAULT 'login',
+  ClientIP varchar(45) NOT NULL DEFAULT '',
+  UserAgent varchar(255) NOT NULL DEFAULT '',
+  RoutePath varchar(255) NOT NULL DEFAULT '',
+  CreatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_signin_created (CreatedAt),
+  KEY idx_signin_outcome (Outcome),
+  KEY idx_signin_user (UserID),
+  KEY idx_signin_provider (Provider)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS AccessLogs (
+  ID bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  UserID int unsigned NULL,
+  Area varchar(100) NOT NULL DEFAULT '',
+  RoutePath varchar(255) NOT NULL DEFAULT '',
+  ClientIP varchar(45) NOT NULL DEFAULT '',
+  Decision varchar(20) NOT NULL,
+  PolicySource varchar(100) NOT NULL DEFAULT '',
+  Detail varchar(255) NOT NULL DEFAULT '',
+  UserAgent varchar(255) NOT NULL DEFAULT '',
+  CreatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_access_created (CreatedAt),
+  KEY idx_access_decision (Decision),
+  KEY idx_access_area (Area)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS EmailLogs (
+  ID bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  UserID int unsigned NULL,
+  EventType varchar(80) NOT NULL,
+  Recipient varchar(255) NOT NULL DEFAULT '',
+  Status varchar(20) NOT NULL,
+  ProviderMessage varchar(255) NOT NULL DEFAULT '',
+  ClientIP varchar(45) NOT NULL DEFAULT '',
+  UserAgent varchar(255) NOT NULL DEFAULT '',
+  CreatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_email_created (CreatedAt),
+  KEY idx_email_status (Status),
+  KEY idx_email_event (EventType)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS LoginRateLimit (
+  RateKey varchar(190) NOT NULL PRIMARY KEY,
+  Attempts int unsigned NOT NULL DEFAULT 0,
+  WindowStartedAt datetime NOT NULL,
+  BlockedUntil datetime NULL,
+  UpdatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

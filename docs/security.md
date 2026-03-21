@@ -27,6 +27,4 @@ Use placeholders in docs and samples:
 1. Revoke exposed API tokens.
 2. Rotate Entra app secrets and any affected passwords.
 3. Audit logs for misuse.
-4. Apply history remediation if leaked values were committed.
-
-See: [History Remediation Runbook](history-remediation.md).
+4. If leaked values were committed, scrub them from history where possible, invalidate any cached clones, and treat the repository as compromised until cleaned.

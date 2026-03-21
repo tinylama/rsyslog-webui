@@ -1,0 +1,96 @@
+# HTTPS stack (manual certs): Traefik terminates TLS using mounted certificate files.
+#
+# Use this when you don't want Cloudflare DNS-01 / API token automation.
+# Requirements:
+#   - Place certificate/key at:
+#       docker/certs/tls.crt
+#       docker/certs/tls.key
+#   - Start stack:
+#       docker compose --env-file .env.tls -f docker-compose.tls-manual.yml up -d --build
+
+name: rsyslog-webui
+
+services:
+  db:
+    image: mysql:8.0
+    command: ["--default-authentication-plugin=mysql_native_password"]
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: rsyslogdb
+      MYSQL_USER: rsyslog
+      MYSQL_PASSWORD: rsyslog
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${MYSQL_HOST_PORT:-3306}:3306"
+    networks:
+      - internal
+
+  rsyslog:
+    build: ./docker/rsyslog
+    depends_on:
+      - db
+    ports:
+      - "${RSYSLOG_INGEST_PORT:-5514}:5514/tcp"
+      - "${RSYSLOG_INGEST_PORT:-5514}:5514/udp"
+    networks:
+      - internal
+
+  web:
+    build: .
+    volumes:
+      - .:/var/www/html
+      - web-vendor:/var/www/html/vendor
+    depends_on:
+      - db
+    environment:
+      RSYSLOG_DB_HOST: db
+      RSYSLOG_DB_NAME: rsyslogdb
+      RSYSLOG_DB_USER: rsyslog
+      RSYSLOG_DB_PASSWORD: rsyslog
+      RSYSLOG_SITE_NAME: System Logs
+      RSYSLOG_KEEP_DAYS: 90
+      RSYSLOG_AUTH_ENABLED: "1"
+      RSYSLOG_SESSION_SECRET: ${RSYSLOG_SESSION_SECRET:-change-me-in-production}
+      RSYSLOG_ADMIN_USERNAME: ${RSYSLOG_ADMIN_USERNAME:-admin}
+      RSYSLOG_ADMIN_PASSWORD: ${RSYSLOG_ADMIN_PASSWORD:-admin123}
+      RSYSLOG_LOGIN_RATE_LIMIT: "0"
+      RSYSLOG_E2E_ENABLED: "1"
+    networks:
+      - internal
+      - edge
+
+  traefik:
+    image: traefik:v3.3
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./docker/certs:/certs:ro
+      - ./docker/traefik-dynamic.tls-manual.yml:/etc/traefik/dynamic/traefik-dynamic.tls-manual.yml:ro
+    command:
+      - --providers.docker=false
+      - --log.level=INFO
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+    networks:
+      - edge
+
+networks:
+  internal:
+    driver: bridge
+  edge:
+    driver: bridge
+
+volumes:
+  db-data:
+  web-vendor:

@@ -43,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	} else {
 		$username = trim($_POST['username'] ?? '');
 		$password = $_POST['password'] ?? '';
+		$clientIp = auth_client_ip_for_whitelist();
 
 		if ($username === '' || $password === '') {
 			$error = 'Username and password are required.';
@@ -51,8 +52,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			// Create an admin account, then sign the user in.
 			if (mb_strlen($username) < 3) {
 				$error = 'Username must be at least 3 characters.';
-			} else if (mb_strlen($password) < 8) {
-				$error = 'Password must be at least 8 characters.';
+			} else if (
+				mb_strlen($password) < 12
+				|| preg_match('/[A-Z]/', $password) !== 1
+				|| preg_match('/[a-z]/', $password) !== 1
+				|| preg_match('/[0-9]/', $password) !== 1
+			) {
+				$error = 'Password must be at least 12 characters and include upper, lower, and number.';
 			} else {
 				try {
 					$pdo = auth_db();
@@ -75,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 							->execute([':uid' => $userId, ':rid' => $adminRoleId]);
 
 						auth_establish_session($userId, 'admin', $username, 'local');
+						auth_log_signin_attempt($userId, $username, 'local', 'allowed', 'first_login_setup', 'local_password');
 						$_SESSION['csrf_login'] = bin2hex(random_bytes(32));
 						header('Location: ' . $next);
 						exit;
@@ -85,6 +92,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			}
 		} else {
 			$pdo = auth_db();
+			if (auth_login_rate_limit_enabled()) {
+				$rate = auth_login_rate_limit_state($pdo, $username, $clientIp);
+				if ($rate['blocked']) {
+					$wait = max(1, (int) $rate['retry_after']);
+					$error = 'Too many failed attempts. Please wait ' . $wait . ' seconds and try again.';
+					auth_log_signin_attempt(null, $username, 'local', 'failed', 'rate_limited', 'local_password');
+				}
+			}
+			if ($error !== '') {
+				// skip password verification
+			} else {
 			$stmt = $pdo->prepare(
 				"SELECT u.ID AS id, u.PasswordHash AS password_hash, u.ExternalProvider AS ext_provider,
 					u.Email, u.MfaTotpSecret, u.MfaEmailEnabled, u.MfaRequired,
@@ -100,38 +118,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 			if ($user && !empty($user['ext_provider'])) {
 				$error = 'This account signs in with Microsoft. Use “Sign in with Microsoft” below.';
+				if (auth_login_rate_limit_enabled()) {
+					auth_login_rate_limit_record_failure($pdo, $username, $clientIp);
+				}
+				auth_log_signin_attempt((int) ($user['id'] ?? 0), $username, 'local', 'failed', 'external_provider_account', 'local_password');
 			} elseif ($user && password_verify($password, $user['password_hash'])) {
 				$uid = (int) $user['id'];
 				$role = $user['role'] ?? 'user';
-				if (auth_user_requires_mfa($pdo, $uid, $user)) {
+				$hasMfaEnrolled = auth_user_has_mfa_enrolled($pdo, $uid, $user);
+				// Mutually exclusive branches: MFA-not-enrolled only sets $error (stay on login). Do not redirect here.
+				if (auth_local_mfa_required() && !$hasMfaEnrolled) {
+					$error = 'Your account requires MFA enrollment before local sign-in is allowed. Ask an administrator to enroll TOTP or passkey.';
+					if (auth_login_rate_limit_enabled()) {
+						auth_login_rate_limit_record_failure($pdo, $username, $clientIp);
+					}
+					auth_log_signin_attempt($uid, $username, 'local', 'failed', 'mfa_required_not_enrolled', 'local_password');
+				} elseif (auth_user_requires_mfa($pdo, $uid, $user)) {
 					auth_mfa_set_pending($uid, is_string($role) ? $role : 'user', $username, $username, 'local', $next);
+					auth_log_signin_attempt($uid, $username, 'local', 'failed', 'mfa_challenge_required', 'local_password');
 					$_SESSION['csrf_login'] = bin2hex(random_bytes(32));
 					header('Location: mfa/challenge.php', true, 302);
 					exit;
+				} else {
+					auth_establish_session($uid, is_string($role) ? $role : 'user', $username, 'local');
+					if (auth_login_rate_limit_enabled()) {
+						auth_login_rate_limit_clear($pdo, $username, $clientIp);
+					}
+					auth_log_signin_attempt($uid, $username, 'local', 'allowed', 'password_verified', 'local_password');
+					$_SESSION['csrf_login'] = bin2hex(random_bytes(32));
+					header('Location: ' . $next);
+					exit;
 				}
-				auth_establish_session($uid, is_string($role) ? $role : 'user', $username, null);
-				$_SESSION['csrf_login'] = bin2hex(random_bytes(32));
-				header('Location: ' . $next);
-				exit;
 			} else {
 				$error = 'Invalid username or password.';
+				if (auth_login_rate_limit_enabled()) {
+					auth_login_rate_limit_record_failure($pdo, $username, $clientIp);
+				}
+				auth_log_signin_attempt($user ? (int) ($user['id'] ?? 0) : null, $username, 'local', 'failed', 'invalid_credentials', 'local_password');
+			}
 			}
 		}
 	}
 }
 
 $siteTitle = htmlspecialchars($site_name ?? 'System Logs', ENT_QUOTES, 'UTF-8');
+$loginMetaDescription = 'Sign in to ' . ($site_name ?? 'System Logs') . ' to search and tail syslog with live updates, filters, and optional Microsoft Entra ID.';
 $azureReady = auth_is_enabled() && auth_azure_enabled() && auth_azure_is_configured();
 $nextEnc = htmlspecialchars($next, ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="<?php echo htmlspecialchars($loginMetaDescription, ENT_QUOTES, 'UTF-8'); ?>">
 	<title>Sign in — <?php echo $siteTitle; ?></title>
+	<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+	<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-	<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+	<noscript><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"></noscript>
 	<link href="css/layout.css" rel="stylesheet">
 	<link href="css/custom.css" rel="stylesheet">
 	<link href="css/dark-mode.css" rel="stylesheet">
@@ -147,6 +193,7 @@ $nextEnc = htmlspecialchars($next, ENT_QUOTES, 'UTF-8');
 </head>
 <body class="bg-body-secondary">
 <div class="app-shell py-4 py-md-5">
+<main id="main-content">
 	<div class="row justify-content-center px-1">
 		<div class="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
 			<div class="card shadow-sm border-0">
@@ -160,11 +207,6 @@ $nextEnc = htmlspecialchars($next, ENT_QUOTES, 'UTF-8');
 							</p>
 						</div>
 					</div>
-					<div class="form-check form-switch mb-3">
-						<input class="form-check-input" type="checkbox" id="darkSwitch" aria-label="Dark mode">
-						<label class="form-check-label small" for="darkSwitch">Dark mode</label>
-					</div>
-
 					<?php if ($errBanner !== ''): ?>
 						<div class="alert alert-warning small" role="alert"><?php echo htmlspecialchars($errBanner, ENT_QUOTES, 'UTF-8'); ?></div>
 					<?php endif; ?>
@@ -200,6 +242,7 @@ $nextEnc = htmlspecialchars($next, ENT_QUOTES, 'UTF-8');
 			</div>
 		</div>
 	</div>
+</main>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="js/dark-mode-switch.js"></script>

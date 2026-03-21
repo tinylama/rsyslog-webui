@@ -26,19 +26,27 @@ $active = $navAdminActive ?? 'users';
         <li class="nav-item">
           <a class="nav-link<?php echo $active === 'maintenance' ? ' active' : ''; ?>" href="maintenance.php" <?php echo $active === 'maintenance' ? 'aria-current="page"' : ''; ?>><i class="bi bi-tools me-1" aria-hidden="true"></i>Maintenance</a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link<?php echo $active === 'logs' ? ' active' : ''; ?>" href="logs.php" <?php echo $active === 'logs' ? 'aria-current="page"' : ''; ?>><i class="bi bi-activity me-1" aria-hidden="true"></i>Logs</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link<?php echo $active === 'collector' ? ' active' : ''; ?>" href="collector-config.php" <?php echo $active === 'collector' ? 'aria-current="page"' : ''; ?>><i class="bi bi-diagram-3 me-1" aria-hidden="true"></i>Collector config</a>
+        </li>
         <?php if (!empty($auth_enabled) && $who !== ''): ?>
         <li class="nav-item">
           <a class="nav-link" href="../account/security.php"><i class="bi bi-shield-lock me-1" aria-hidden="true"></i>Account</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="../docs/index.php"><i class="bi bi-journal-text me-1" aria-hidden="true"></i>Docs</a>
         </li>
         <?php endif; ?>
         </ul>
 
         <div class="ms-auto d-flex align-items-center gap-2">
-          <div class="form-check m-0">
+          <div class="form-check form-switch m-0">
             <input class="form-check-input" type="checkbox" id="darkSwitch" aria-label="Dark mode">
             <label class="form-check-label small" for="darkSwitch">Dark</label>
           </div>
-
           <?php if (!empty($auth_enabled) && $who !== ''): ?>
           <div class="dropdown">
             <a class="dropdown-toggle d-flex align-items-center gap-2 text-decoration-none" href="#" id="adminUserMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">

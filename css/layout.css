@@ -126,7 +126,6 @@
 .app-table-wrap {
 	width: 100%;
 	overflow-x: auto;
-	-webkit-overflow-scrolling: touch;
 }
 
 /* Empty / no-rows state */

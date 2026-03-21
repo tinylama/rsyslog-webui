@@ -6,7 +6,11 @@ RUN composer install --no-dev --no-interaction --optimize-autoloader
 FROM php:8.3-apache
 
 RUN docker-php-ext-install pdo_mysql
-RUN apt-get update && apt-get install -y --no-install-recommends git unzip && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends git unzip && rm -rf /var/lib/apt/lists/* \
+	&& a2enmod expires headers
+
+COPY docker/apache/static-cache.conf /etc/apache2/conf-available/rsyslog-static-cache.conf
+RUN a2enconf rsyslog-static-cache
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 

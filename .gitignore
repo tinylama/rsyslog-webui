@@ -1,3 +1,4 @@
+# --- App secrets & local config (never commit) ---
 config.php
 .env
 .env.tls
@@ -11,20 +12,55 @@ config.php
 *.acme.json.*
 /.acme.json.tmp
 /.acme.json.tmp2
+
+# --- Logs & runtime noise ---
+*.log
+logs/
+**/logs/
+debug-*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Dependencies ---
 node_modules/
+/vendor/
+
+# --- Test / QA output (regenerate locally) ---
+tests/e2e/.e2e-bootstrap-token
 /.playwright/
-.htaccess
+/test-results/
+/playwright-report/
+/blob-report/
+/lighthouse-*.json
+/lighthouse-*.html
+
+# --- Caches & tooling ---
 json/reports/cache/*.json
+.phpunit.result.cache
+.php-cs-fixer.cache
+.phpcs-cache
+.phpstan/
+
+# --- Web server / generated (project-specific) ---
+.htaccess
 site.webmanifest
 
-# Cursor / IDE
+# --- Local manual TLS certs ---
+docker/certs/*
+!docker/certs/.gitkeep
+
+# --- OS & editors ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# --- Cursor / IDE ---
 .cursor/
 **/.cursor/
 *.cursor-plan.md
 .cursorrules.local
-
-# Debug / local logs
-debug-*.log
-
-# PHP dependencies
-/vendor/

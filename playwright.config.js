@@ -4,6 +4,8 @@
 /** @type {import('@playwright/test').PlaywrightTestConfig} */
 const config = {
   testDir: './tests/e2e',
+  globalSetup: require.resolve('./tests/e2e/global-setup.js'),
+  globalTeardown: require.resolve('./tests/e2e/global-teardown.js'),
   timeout: 30_000,
   retries: 0,
   use: {

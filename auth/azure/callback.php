@@ -16,6 +16,7 @@ if (!auth_azure_enabled() || !auth_azure_is_configured()) {
 $err = $_GET['error'] ?? '';
 if (is_string($err) && $err !== '') {
 	$desc = is_string($_GET['error_description'] ?? '') ? $_GET['error_description'] : '';
+	auth_log_signin_attempt(null, '', 'azure', 'failed', 'oauth_error:' . $err, 'azure_callback');
 	header('Location: /login.php?err=' . rawurlencode('azure_' . $err . ($desc !== '' ? ': ' . $desc : '')), true, 302);
 	exit;
 }
@@ -23,10 +24,12 @@ if (is_string($err) && $err !== '') {
 $state = $_GET['state'] ?? '';
 $code = $_GET['code'] ?? '';
 if (!is_string($state) || $state === '' || !isset($_SESSION['oauth2_state']) || !hash_equals((string) $_SESSION['oauth2_state'], $state)) {
+	auth_log_signin_attempt(null, '', 'azure', 'failed', 'invalid_state', 'azure_callback');
 	header('Location: /login.php?err=' . rawurlencode('invalid_state'), true, 302);
 	exit;
 }
 if (!is_string($code) || $code === '') {
+	auth_log_signin_attempt(null, '', 'azure', 'failed', 'missing_code', 'azure_callback');
 	header('Location: /login.php?err=' . rawurlencode('missing_code'), true, 302);
 	exit;
 }
@@ -35,6 +38,7 @@ unset($_SESSION['oauth2_state']);
 $verifier = $_SESSION['oauth2_code_verifier'] ?? '';
 unset($_SESSION['oauth2_code_verifier']);
 if (!is_string($verifier) || $verifier === '') {
+	auth_log_signin_attempt(null, '', 'azure', 'failed', 'missing_verifier', 'azure_callback');
 	header('Location: /login.php?err=' . rawurlencode('missing_verifier'), true, 302);
 	exit;
 }
@@ -82,11 +86,13 @@ try {
 	$next = auth_safe_next(is_string($next) ? $next : '/');
 	if (auth_user_requires_mfa($pdo, $userId)) {
 		auth_mfa_set_pending($userId, $role, $display, null, 'azure', $next);
+		auth_log_signin_attempt($userId, $display, 'azure', 'failed', 'mfa_challenge_required', 'azure_callback');
 		$_SESSION['csrf_login'] = bin2hex(random_bytes(32));
 		header('Location: /mfa/challenge.php', true, 302);
 		exit;
 	}
 	auth_establish_session($userId, $role, $display, 'azure');
+	auth_log_signin_attempt($userId, $display, 'azure', 'allowed', 'oidc_verified', 'azure_callback');
 	$_SESSION['csrf_login'] = bin2hex(random_bytes(32));
 } catch (Throwable $e) {
 	// Surface the underlying (sanitized) reason for faster diagnosis.
@@ -96,6 +102,7 @@ try {
 	}
 	// Avoid dumping large payloads into the query string.
 	$reason = mb_substr($reason, 0, 120);
+	auth_log_signin_attempt(null, '', 'azure', 'failed', 'azure_callback_failed:' . $reason, 'azure_callback');
 	header('Location: /login.php?err=' . rawurlencode('azure_callback_failed:' . $reason), true, 302);
 	exit;
 }

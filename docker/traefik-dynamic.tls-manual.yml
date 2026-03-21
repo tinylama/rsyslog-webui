@@ -1,0 +1,20 @@
+http:
+  routers:
+    rsyslog-webui:
+      # Manual cert mode: present the certificate mounted at /certs.
+      rule: "HostRegexp(`^.+$`)"
+      entryPoints:
+        - websecure
+      tls: {}
+      service: rsyslog-webui
+  services:
+    rsyslog-webui:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://web:80"
+
+tls:
+  certificates:
+    - certFile: /certs/tls.crt
+      keyFile: /certs/tls.key

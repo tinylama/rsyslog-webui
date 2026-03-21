@@ -36,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	if (!is_string($t) || !hash_equals($csrf, $t)) {
 		$error = 'Invalid session. Refresh and try again.';
 	} elseif (auth_mfa_attempts_exceeded()) {
+		auth_log_signin_attempt($uid, (string) ($pending['username'] ?? ''), (string) ($pending['provider'] ?? 'local'), 'failed', 'mfa_locked', 'mfa_challenge');
 		auth_mfa_clear_pending();
 		header('Location: /login.php?err=' . rawurlencode('mfa_locked'), true, 302);
 		exit;
@@ -47,10 +48,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 				auth_mfa_clear_pending();
 				$dn = $pending['display_name'] ?? $pending['username'] ?? 'user';
 				auth_establish_session($uid, $pending['role'], $dn, $pending['provider']);
+				auth_log_signin_attempt($uid, (string) ($pending['username'] ?? $dn), (string) ($pending['provider'] ?? 'local'), 'allowed', 'mfa_totp_verified', 'mfa_challenge');
 				header('Location: ' . $pending['next'], true, 302);
 				exit;
 			}
 			auth_mfa_bump_attempts();
+			auth_log_signin_attempt($uid, (string) ($pending['username'] ?? ''), (string) ($pending['provider'] ?? 'local'), 'failed', 'mfa_totp_invalid', 'mfa_challenge');
 			$error = 'Invalid authenticator code.';
 			// Email-based MFA was removed in favor of TOTP + passkeys.
 			// Password reset and email-change verification use email codes elsewhere.

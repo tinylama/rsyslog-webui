@@ -27,7 +27,7 @@
   - sender targets Docker host IP, not `localhost`
   - collector port is published in compose `ps` output
 
-- If you use direct MySQL ingestion (`ommysql`), verify `3308` reachability from sender and credentials (`rsyslog` / `rsyslog` / `rsyslogdb`).
+- If you use direct MySQL ingestion (`ommysql`), verify the **host** MySQL port is reachable from the sender (default `3306`, or whatever you set in `MYSQL_HOST_PORT`) and credentials match (`rsyslog` / `rsyslog` / `rsyslogdb`). Inside Docker, the `rsyslog` service always uses `db:3306`.
 
 ## Maintenance / Retention
 
@@ -59,6 +59,7 @@
 
 ## TLS Problems
 
-- Confirm ports 80/443 are free.
-- Validate Cloudflare token scope (DNS edit on target zone).
-- Check Traefik logs for ACME/DNS errors.
+- Confirm ports `80` and `443` are free on the Docker host.
+- **Automated ACME** (default: `docker-compose.yml` + `.env.tls` with `COMPOSE_PROFILES=tls`, or `docker-compose.tls.yml`): validate Cloudflare token scope (`Zone:DNS:Edit` on the zone for `TLS_DOMAIN`). Check Traefik logs for ACME/DNS errors (`docker compose ... logs traefik`).
+- **Manual stack** (`docker-compose.tls-manual.yml`): confirm `docker/certs/tls.crt` and `docker/certs/tls.key` exist, are readable inside the container mount, and match the hostname clients use. Concatenate intermediate CAs into `tls.crt` if browsers show chain errors. After replacing certs, restart Traefik.
+- Wrong compose file: manual certs require `docker-compose.tls-manual.yml`; ACME uses the main compose + `.env.tls` (or `docker-compose.tls.yml`).

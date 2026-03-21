@@ -6,24 +6,38 @@ require_once __DIR__ . '/../../auth.php';
 require_once __DIR__ . '/../azure-oidc.php';
 
 $site = htmlspecialchars((string) ($site_name ?? 'System Logs'), ENT_QUOTES, 'UTF-8');
+$landingMetaDescription = 'Search and tail syslog with live updates, severity filters, and role-based access. Optional Microsoft Entra ID sign-in, MFA, and operator documentation.';
 $currentUser = auth_is_enabled() ? auth_current_user() : null;
 $signedIn = auth_is_enabled() && $currentUser !== null;
 $displayName = is_array($currentUser) ? (string) ($currentUser['display_name'] ?? '') : '';
 $isAdmin = is_array($currentUser) && (($currentUser['role'] ?? '') === 'admin');
 $azureReady = auth_azure_enabled() && auth_azure_is_configured();
 $devMode = auth_is_running_in_docker_dev();
-$docsBase = 'https://logs.tinycellar.com/docs';
+$docsBase = 'docs';
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="<?php echo htmlspecialchars($landingMetaDescription, ENT_QUOTES, 'UTF-8'); ?>">
 	<title><?php echo $site; ?> — Centralized syslog search</title>
+	<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+	<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+	<!-- Bootstrap must load before app CSS: grid/typography/buttons are needed for FCP/LCP (async CSS regressed lab scores). -->
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-	<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-	<link href="css/layout.css" rel="stylesheet">
-	<link href="css/landing.css" rel="stylesheet">
+	<link href="css/vendor/bootstrap-icons.min.css" rel="stylesheet">
+	<!-- Single first-party sheet: layout + theme + landing (fewer round-trips than three separate files). -->
+	<link href="css/landing-public.css" rel="stylesheet">
+	<script>
+	(function () {
+		try {
+			if (localStorage.getItem('darkSwitch') === 'dark') {
+				document.documentElement.setAttribute('data-bs-theme', 'dark');
+			}
+		} catch (e) {}
+	})();
+	</script>
 </head>
 <body class="bg-body-secondary">
 <div class="app-shell py-4 py-md-5">
@@ -51,6 +65,7 @@ $docsBase = 'https://logs.tinycellar.com/docs';
 	</nav>
 	<?php endif; ?>
 
+	<main id="main-content">
 	<div class="landing-hero">
 		<div class="row align-items-center g-4">
 			<div class="col-lg-7">
@@ -115,7 +130,7 @@ $docsBase = 'https://logs.tinycellar.com/docs';
 				<h2 class="h4 mb-1">Documentation</h2>
 				<p class="text-muted mb-0 small">Setup, security, deployment, and testing guides for operators and developers.</p>
 			</div>
-			<a class="btn btn-sm btn-outline-primary" href="<?php echo htmlspecialchars($docsBase . '/index.php', ENT_QUOTES, 'UTF-8'); ?>">
+			<a class="btn btn-sm btn-primary landing-docs-cta" href="<?php echo htmlspecialchars($docsBase . '/index.php', ENT_QUOTES, 'UTF-8'); ?>">
 				<i class="bi bi-journal-text me-1" aria-hidden="true"></i>Open docs index
 			</a>
 		</div>
@@ -294,6 +309,8 @@ $docsBase = 'https://logs.tinycellar.com/docs';
 	</script>
 	<?php endif; ?>
 
+	</main>
+
 	<footer class="landing-footer">
 		<?php if ($signedIn): ?>
 			Use the account menu to sign out.
@@ -302,6 +319,7 @@ $docsBase = 'https://logs.tinycellar.com/docs';
 		<?php endif; ?>
 	</footer>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script defer src="js/dark-mode-switch.js"></script>
 </body>
 </html>

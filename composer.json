@@ -1,6 +1,7 @@
 {
   "name": "rsyslog-webui/app",
   "description": "Rsyslog Web UI",
+  "version": "1.1.0",
   "require": {
     "php": ">=8.3",
     "firebase/php-jwt": "^6.10",
@@ -17,7 +18,7 @@
     "sort-packages": true,
     "optimize-autoloader": true,
     "audit": {
-      "block-insecure": false
+      "block-insecure": true
     }
   }
 }

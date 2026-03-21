@@ -18,8 +18,6 @@ $authOn = !empty($auth_enabled);
       <form class="app-toolbar app-toolbar-main flex-lg-grow-1 order-lg-1 my-2 my-lg-0" role="search" id="mainSearchForm" action="#" method="get">
         <input id="txtSearch" type="search" class="form-control" placeholder="Search message, host, tag…" autocomplete="off" enterkeyhint="search" aria-label="Search logs">
         <div class="app-toolbar-actions app-toolbar-actions-icons">
-          <input type="checkbox" class="btn-check" id="darkSwitch" autocomplete="off" aria-label="Dark mode">
-          <label class="btn btn-sm btn-outline-secondary" for="darkSwitch" title="Dark mode"><i class="bi bi-moon-stars" aria-hidden="true"></i><span class="visually-hidden"> Dark</span></label>
           <input class="btn-check" type="checkbox" id="chkLive" checked autocomplete="off" aria-label="Live tail">
           <label class="btn btn-sm btn-outline-secondary" for="chkLive" title="Live tail"><i class="bi bi-broadcast" aria-hidden="true"></i><span class="visually-hidden"> Live</span></label>
           <button id="cmdSearch" type="submit" class="btn btn-sm btn-outline-secondary" title="Reload from server"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i><span class="visually-hidden"> Reload</span></button>
@@ -35,6 +33,7 @@ $authOn = !empty($auth_enabled);
           </a>
           <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userMenu">
             <li><a class="dropdown-item" href="account/security.php"><i class="bi bi-shield-lock me-2" aria-hidden="true"></i>Account security</a></li>
+            <li><a class="dropdown-item" href="docs/index.php"><i class="bi bi-journal-text me-2" aria-hidden="true"></i>Documentation</a></li>
             <?php if (!empty($isAdmin)): ?>
             <li><a class="dropdown-item" href="admin/users.php"><i class="bi bi-people me-2" aria-hidden="true"></i>Admin</a></li>
             <?php endif; ?>

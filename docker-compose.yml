@@ -11,7 +11,8 @@ services:
       - db-data:/var/lib/mysql
       - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     ports:
-      - "${MYSQL_HOST_PORT:-3307}:3306"
+      # Host 3306 → container 3306 (standard MySQL port for external ommysql / host tools)
+      - "${MYSQL_HOST_PORT:-3306}:3306"
 
   rsyslog:
     build: ./docker/rsyslog
@@ -48,6 +49,10 @@ services:
       RSYSLOG_SESSION_SECRET: "dev-session-secret-change-me"
       RSYSLOG_ADMIN_USERNAME: "admin"
       RSYSLOG_ADMIN_PASSWORD: "admin123"
+      # Playwright / local iteration: avoid locking out admin after repeated test logins
+      RSYSLOG_LOGIN_RATE_LIMIT: "0"
+      # E2E bootstrap (json/e2e-bootstrap.php): Docker dev only; requires tests/e2e/.e2e-bootstrap-token from Playwright
+      RSYSLOG_E2E_ENABLED: "1"
       # Optional Microsoft Entra ID (see README):
       # RSYSLOG_AZURE_ENABLED: "1"
       # RSYSLOG_AZURE_TENANT_ID: "your-tenant-guid"
@@ -57,7 +62,51 @@ services:
       # RSYSLOG_AZURE_ADMIN_GROUP_ID: "optional-group-object-id"
     ports:
       - "${WEB_PORT:-8080}:80"
+    networks:
+      - default
+      - edge
+
+  # Terminates TLS on host 80/443 (Let's Encrypt DNS-01 via Cloudflare).
+  # Default: copy docker/tls.env.example → .env.tls (includes COMPOSE_PROFILES=tls), then:
+  #   docker compose --env-file .env.tls up -d --build
+  # Without COMPOSE_PROFILES in env: add --profile tls. Or use docker-compose.tls.yml.
+  traefik:
+    profiles:
+      - tls
+    image: traefik:v3.3
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-letsencrypt:/letsencrypt
+      - ./docker/traefik-dynamic.tls.yml:/etc/traefik/dynamic/traefik-dynamic.tls.yml:ro
+    command:
+      - --providers.docker=false
+      - --log.level=INFO
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --certificatesresolvers.cf.acme.dnschallenge=true
+      - --certificatesresolvers.cf.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.cf.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.cf.acme.storage=/letsencrypt/acme.json
+    networks:
+      - edge
+
+networks:
+  edge:
+    driver: bridge
 
 volumes:
   db-data:
   web-vendor:
+  traefik-letsencrypt:

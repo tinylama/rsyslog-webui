@@ -8,9 +8,6 @@
  */
 window.addEventListener('load', () => {
   const darkSwitch = document.getElementById('darkSwitch');
-  if (!darkSwitch) {
-    return;
-  }
 
   function applyTheme(isDark) {
     const root = document.documentElement;
@@ -27,7 +24,9 @@ window.addEventListener('load', () => {
     const darkThemeSelected =
       localStorage.getItem('darkSwitch') !== null &&
       localStorage.getItem('darkSwitch') === 'dark';
-    darkSwitch.checked = darkThemeSelected;
+    if (darkSwitch) {
+      darkSwitch.checked = darkThemeSelected;
+    }
     applyTheme(darkThemeSelected);
   }
 
@@ -41,5 +40,7 @@ window.addEventListener('load', () => {
   }
 
   initTheme();
-  darkSwitch.addEventListener('change', resetTheme);
+  if (darkSwitch) {
+    darkSwitch.addEventListener('change', resetTheme);
+  }
 });
