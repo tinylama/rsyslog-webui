@@ -1,23 +1,5 @@
 const { test, expect } = require('@playwright/test');
-
-const ADMIN_USER = process.env.ADMIN_USER || 'admin';
-const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
-
-async function login(page) {
-  await page.goto('/login.php');
-  await page.locator('#username').fill(ADMIN_USER);
-  await page.locator('#password').fill(ADMIN_PASS);
-  await page.locator('#loginBtn').click();
-  await page.waitForURL('**/', { timeout: 10_000 });
-
-  // First-login onboarding is non-blocking, but dismiss it to keep selectors stable.
-  const skip = page.locator('[data-onboarding-skip="1"]');
-  if ((await skip.count()) > 0) {
-    await skip.click({ timeout: 1000 }).catch(() => {});
-  }
-
-  await expect(page.locator('#table-style')).toBeVisible();
-}
+const { loginAsAdmin } = require('./auth-helpers');
 
 test.describe('Mobile view - unauthenticated', () => {
   test.use({ viewport: { width: 390, height: 844 } }); // iPhone 12/13-ish
@@ -50,7 +32,7 @@ test.describe('Mobile view - authenticated', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
   test.beforeEach(async ({ page }) => {
-    await login(page);
+    await loginAsAdmin(page);
   });
 
   test('log viewer navbar + table render', async ({ page }) => {

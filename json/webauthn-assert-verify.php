@@ -34,10 +34,12 @@ if (auth_webauthn_finish_assertion($pdo, $uid, $raw)) {
 	auth_mfa_clear_pending();
 	$dn = $p['display_name'] ?? $p['username'] ?? 'user';
 	auth_establish_session($uid, $p['role'], $dn, $p['provider']);
+	auth_log_signin_attempt($uid, (string) ($p['username'] ?? $dn), (string) ($p['provider'] ?? 'local'), 'allowed', 'mfa_passkey_verified', 'webauthn_assert');
 	echo json_encode(['ok' => true, 'redirect' => $p['next']]);
 	exit;
 }
 
 auth_mfa_bump_attempts();
+auth_log_signin_attempt($uid, (string) ($p['username'] ?? ''), (string) ($p['provider'] ?? 'local'), 'failed', 'mfa_passkey_failed', 'webauthn_assert');
 http_response_code(400);
 echo json_encode(['ok' => false, 'error' => 'verify_failed']);

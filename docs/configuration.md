@@ -20,13 +20,16 @@ This document centralizes config keys used by `config.php` and environment varia
 | `RSYSLOG_AUTH_ENABLED` | Enable app auth | `1` |
 | `RSYSLOG_SESSION_SECRET` | Session signing secret | `long-random-value` |
 | `RSYSLOG_APP_SECRET` | Encryption key for protected values | `long-random-value` |
+| `RSYSLOG_LOGIN_RATE_LIMIT` | Failed-login lockout in `LoginRateLimit` table (`1` default). Set `0` for local Playwright / dev compose only. | `1` |
+| `RSYSLOG_E2E_ENABLED` | Enables `json/e2e-bootstrap.php` when **also** running inside Docker (`/.dockerenv`). Set `0` or omit in production-like stacks. Dev compose sets `1`. | `0` |
+| `RSYSLOG_E2E_TOKEN_FILE` | Optional override path to the Playwright token file inside the container (default: `tests/e2e/.e2e-bootstrap-token` under the app root). | _(unset)_ |
 
 ## Collector / Ingestion Ports
 
 | Setting | Description | Example |
 | --- | --- | --- |
 | `RSYSLOG_INGEST_PORT` | Host port mapped to collector listener (`5514` TCP/UDP) | `5514` |
-| `MYSQL_HOST_PORT` | Host port mapped to MySQL in Docker stacks | `3307` (dev), `3308` (tls/prod) |
+| `MYSQL_HOST_PORT` | Host port mapped to MySQL in Docker stacks (container always listens on `3306`) | `3306` (default; change if another service uses `3306` on the host) |
 
 ## Maintenance (Admin UI)
 
@@ -65,6 +68,19 @@ Retention policy is configurable in Admin -> Maintenance and stored in `AppSetti
 | --- | --- |
 | `RSYSLOG_HTTPS_WHITELIST_ENABLED` | Enable IP/CIDR allowlist checks for HTTPS traffic |
 | `RSYSLOG_HTTPS_WHITELIST_CIDRS` | Comma/newline list of allowed IPs/CIDRs |
+
+## Docker TLS (`.env.tls` + compose)
+
+Used with `docker compose --env-file .env.tls -f <compose-file> …`.
+
+| Variable | When needed | Description |
+| --- | --- | --- |
+| `TLS_DOMAIN` | `docker-compose.tls.yml` | Hostname on the certificate (DNS must resolve here) |
+| `ACME_EMAIL` | `docker-compose.tls.yml` | Let's Encrypt registration email |
+| `CF_DNS_API_TOKEN` | `docker-compose.tls.yml` only | Cloudflare token with `Zone:DNS:Edit` for DNS-01 |
+| Manual files | `docker-compose.tls-manual.yml` | Host paths `docker/certs/tls.crt` and `docker/certs/tls.key` (not env vars) |
+
+See [Deployment](deployment.md) for full procedures.
 
 ## Safe Defaults and Hygiene
 

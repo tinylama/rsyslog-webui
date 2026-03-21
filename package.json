@@ -1,12 +1,18 @@
 {
   "name": "rsyslog-webui-e2e",
+  "version": "1.1.0",
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "test": "playwright test"
+    "build:landing-css": "node scripts/build-landing-public-css.mjs",
+    "test": "playwright test",
+    "lighthouse:logs": "lighthouse http://localhost:8080/ --chrome-flags=\"--headless --no-sandbox\" --only-categories=performance,accessibility,best-practices,seo --output=html,json --output-path=./lighthouse-logs",
+    "lighthouse:logs:https": "lighthouse https://127.0.0.1/ --chrome-flags=\"--headless --no-sandbox --ignore-certificate-errors\" --only-categories=performance,accessibility,best-practices,seo --output=html,json --output-path=./lighthouse-logs",
+    "lighthouse:docs": "lighthouse http://localhost:8080/docs/index.php --chrome-flags=\"--headless --no-sandbox\" --only-categories=performance,accessibility,best-practices,seo --output=html,json --output-path=./lighthouse-docs",
+    "lighthouse:docs:https": "lighthouse https://127.0.0.1/docs/index.php --chrome-flags=\"--headless --no-sandbox --ignore-certificate-errors\" --only-categories=performance,accessibility,best-practices,seo --output=html,json --output-path=./lighthouse-docs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.46.0"
+    "@playwright/test": "^1.46.0",
+    "lighthouse": "^13.0.3"
   }
 }
-

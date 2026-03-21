@@ -30,6 +30,11 @@ Methods:
 - TOTP (authenticator apps)
 - WebAuthn passkeys
 
+Local policy:
+
+- Admin can enforce MFA for all local accounts.
+- When enabled, local users without enrolled TOTP/passkey cannot complete local password sign-in.
+
 Enrollment and management:
 
 - `account/security.php`
@@ -44,6 +49,13 @@ Enrollment and management:
 
 - Uses Microsoft Graph `sendMail` app permissions (`Mail.Send`).
 - Sender mailbox configured with `RSYSLOG_GRAPH_MAIL_SENDER`.
+- Delivery outcomes are written to `EmailLogs`.
+
+## Audit Logs
+
+- `SignInLogs`: local and Entra attempts (`allowed`/`failed`) with source reason and IP.
+- `AccessLogs`: allow/deny decisions such as HTTPS whitelist policy blocks.
+- User-facing sign-in history is visible in Account -> Security.
 
 ## Auth Flow Diagram
 

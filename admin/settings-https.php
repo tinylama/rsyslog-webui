@@ -7,6 +7,7 @@ require_admin();
 
 $me = auth_current_user();
 $myId = (int) ($me['id'] ?? 0);
+$displayName = is_array($me) ? (string) ($me['display_name'] ?? '') : '';
 
 $navAdminActive = 'https';
 
@@ -20,6 +21,25 @@ $pdo = auth_db();
 // Loaded from env defaults + AppSettings DB overrides.
 $enabled = isset($https_whitelist_enabled) ? (bool) $https_whitelist_enabled : false;
 $listRaw = isset($https_whitelist_cidrs) ? (string) $https_whitelist_cidrs : '';
+$detectedIpCandidates = [];
+$remoteAddr = isset($_SERVER['REMOTE_ADDR']) ? trim((string) $_SERVER['REMOTE_ADDR']) : '';
+if ($remoteAddr !== '' && filter_var($remoteAddr, FILTER_VALIDATE_IP) !== false) {
+	$detectedIpCandidates[] = $remoteAddr;
+}
+$forwarded = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? trim((string) $_SERVER['HTTP_X_FORWARDED_FOR']) : '';
+if ($forwarded !== '') {
+	foreach (explode(',', $forwarded) as $part) {
+		$ip = trim($part);
+		if ($ip !== '' && filter_var($ip, FILTER_VALIDATE_IP) !== false) {
+			$detectedIpCandidates[] = $ip;
+		}
+	}
+}
+$cfIp = isset($_SERVER['HTTP_CF_CONNECTING_IP']) ? trim((string) $_SERVER['HTTP_CF_CONNECTING_IP']) : '';
+if ($cfIp !== '' && filter_var($cfIp, FILTER_VALIDATE_IP) !== false) {
+	$detectedIpCandidates[] = $cfIp;
+}
+$detectedIpCandidates = array_values(array_unique($detectedIpCandidates));
 
 $error = '';
 $success = '';
@@ -84,6 +104,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 					$success = $added > 0 ? 'Entry added.' : 'Entry already exists.';
 				}
 			}
+		} elseif ($action === 'add_detected') {
+			$detected = trim((string) ($_POST['detected_ip'] ?? ''));
+			$norm = auth_normalize_whitelist_cidr($detected);
+			if ($norm === null) {
+				$error = 'Detected IP is invalid.';
+			} elseif (!in_array($norm, $cidrs, true)) {
+				$cidrs[] = $norm;
+				$listRaw = implode("\n", $cidrs);
+				app_settings_save($pdo, 'https_whitelist_cidrs', $listRaw, false);
+				$success = 'Detected IP added to whitelist.';
+			} else {
+				$success = 'Detected IP already exists in whitelist.';
+			}
 		} elseif ($action === 'remove') {
 			$target = trim((string) ($_POST['cidr'] ?? ''));
 			if ($target === '') {
@@ -116,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $cidrs = parse_https_whitelist_entries($listRaw);
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
@@ -126,6 +159,15 @@ $cidrs = parse_https_whitelist_entries($listRaw);
 	<link href="../css/custom.css" rel="stylesheet">
 	<link href="../css/layout.css" rel="stylesheet">
 	<link href="../css/dark-mode.css" rel="stylesheet">
+	<script>
+	(function () {
+		try {
+			if (localStorage.getItem('darkSwitch') === 'dark') {
+				document.documentElement.setAttribute('data-bs-theme', 'dark');
+			}
+		} catch (e) {}
+	})();
+	</script>
 </head>
 <body>
 <div class="app-shell py-3 py-md-4">
@@ -199,6 +241,23 @@ $cidrs = parse_https_whitelist_entries($listRaw);
 					<button type="submit" class="btn btn-primary btn-sm">Add entry</button>
 				</div>
 			</form>
+			<?php if ($detectedIpCandidates !== []): ?>
+				<div class="mb-3">
+					<div class="small text-muted mb-2">Detected connection IPs</div>
+					<div class="d-flex flex-wrap gap-2">
+						<?php foreach ($detectedIpCandidates as $dip): ?>
+							<form method="post" class="d-inline-flex">
+								<input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>" />
+								<input type="hidden" name="action" value="add_detected" />
+								<input type="hidden" name="detected_ip" value="<?php echo htmlspecialchars($dip, ENT_QUOTES, 'UTF-8'); ?>" />
+								<button type="submit" class="btn btn-sm btn-outline-secondary">
+									<i class="bi bi-plus-circle me-1" aria-hidden="true"></i><?php echo htmlspecialchars($dip, ENT_QUOTES, 'UTF-8'); ?>
+								</button>
+							</form>
+						<?php endforeach; ?>
+					</div>
+				</div>
+			<?php endif; ?>
 
 			<div class="table-responsive">
 				<table class="table table-hover table-striped align-middle small mb-0">
@@ -237,6 +296,8 @@ $cidrs = parse_https_whitelist_entries($listRaw);
 		Traffic IP detection uses <code>CF-Connecting-IP</code> when available (Cloudflare proxy) and falls back to <code>X-Forwarded-For</code>/<code>REMOTE_ADDR</code>.
 	</div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/dark-mode-switch.js"></script>
 </body>
 </html>
 

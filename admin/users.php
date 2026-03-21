@@ -17,6 +17,7 @@ $csrfToken = $_SESSION['csrf_admin'];
 $error = '';
 $success = '';
 $pdo = auth_db();
+$localMfaRequired = auth_local_mfa_required();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	$postedCsrf = $_POST['csrf_token'] ?? '';
@@ -26,7 +27,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		$action = (string) ($_POST['action'] ?? '');
 		$targetId = (int) ($_POST['user_id'] ?? 0);
 
-		if ($action !== 'create' && $targetId < 1) {
+		if ($action === 'set_local_mfa_required') {
+			$localMfaRequired = isset($_POST['local_mfa_required']) && $_POST['local_mfa_required'] === '1';
+			app_settings_save($pdo, 'local_mfa_required', $localMfaRequired ? '1' : '0', false);
+			$success = $localMfaRequired ? 'Local account MFA requirement enabled.' : 'Local account MFA requirement disabled.';
+		} elseif ($action !== 'create' && $targetId < 1) {
 			$error = 'Invalid user.';
 		} elseif ($action === 'create') {
 			$username = trim((string) ($_POST['username'] ?? ''));
@@ -61,6 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 					$stmtMap->execute([':uid' => $userId, ':rid' => $roleId]);
 					$pdoCreate->commit();
 					$success = 'User created.';
+					auth_log_access_decision('admin_users', 'allowed', 'user_create', 'created:' . $username);
 				} catch (Throwable $e) {
 					if ($pdoCreate->inTransaction()) {
 						$pdoCreate->rollBack();
@@ -100,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 						}
 
 						$success = 'Username updated.';
+						auth_log_access_decision('admin_users', 'allowed', 'username_update', 'user_id:' . $targetId);
 					}
 				}
 			}
@@ -122,6 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 						$error = 'User not found.';
 					} else {
 						$success = 'Password updated.';
+						auth_log_access_decision('admin_users', 'allowed', 'password_reset', 'user_id:' . $targetId);
 					}
 				}
 			}
@@ -150,6 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 							$_SESSION['user_role'] = $role;
 						}
 						$success = 'Role updated.';
+						auth_log_access_decision('admin_users', 'allowed', 'role_update', 'user_id:' . $targetId . ',role:' . $role);
 					}
 				}
 			}
@@ -165,6 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 					$error = 'User not found.';
 				} else {
 					$success = 'User deleted.';
+					auth_log_access_decision('admin_users', 'allowed', 'delete_user', 'user_id:' . $targetId);
 				}
 			}
 		} else {
@@ -332,11 +342,36 @@ $siteTitle = htmlspecialchars($site_name ?? 'System Logs', ENT_QUOTES, 'UTF-8');
 		</div>
 	</div>
 
+	<div class="card border-0 shadow-sm mb-4">
+		<div class="card-body p-4">
+			<h2 class="h5 mb-3">Local account MFA policy</h2>
+			<form method="post" class="row g-2 align-items-end">
+				<input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>" />
+				<input type="hidden" name="action" value="set_local_mfa_required" />
+				<div class="col-12 col-md-8">
+					<div class="form-check form-switch">
+						<input class="form-check-input" type="checkbox" id="local_mfa_required" name="local_mfa_required" value="1" <?php echo $localMfaRequired ? 'checked' : ''; ?> />
+						<label class="form-check-label" for="local_mfa_required">Require MFA for all local account sign-ins</label>
+					</div>
+				</div>
+				<div class="col-12 col-md-4 d-grid">
+					<button type="submit" class="btn btn-primary btn-sm">Save policy</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
 	<div class="card border-0 shadow-sm">
 		<div class="card-body p-4">
-			<h2 class="h5 mb-3">Add local user</h2>
-			<div class="col-12 col-lg-8 col-xl-6 px-0">
-				<form method="post" class="row g-3">
+			<div class="d-flex align-items-center justify-content-between mb-3">
+				<h2 class="h5 mb-0">Add local user</h2>
+				<button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addUserPanel" aria-expanded="false" aria-controls="addUserPanel">
+					<i class="bi bi-person-plus me-1" aria-hidden="true"></i>Add user
+				</button>
+			</div>
+			<div class="collapse" id="addUserPanel">
+				<div class="col-12 col-lg-8 col-xl-6 px-0">
+					<form method="post" class="row g-3" id="createUserForm">
 					<input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>" />
 					<input type="hidden" name="action" value="create" />
 					<div class="col-12">
@@ -359,14 +394,26 @@ $siteTitle = htmlspecialchars($site_name ?? 'System Logs', ENT_QUOTES, 'UTF-8');
 						</select>
 					</div>
 					<div class="col-12">
-						<button type="submit" class="btn btn-primary">Create user</button>
+						<button type="submit" class="btn btn-primary" id="createUserBtn">Create user</button>
 					</div>
-				</form>
+					</form>
+				</div>
 			</div>
 		</div>
 	</div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="../js/dark-mode-switch.js"></script>
+<script>
+(function () {
+	var form = document.getElementById('createUserForm');
+	var btn = document.getElementById('createUserBtn');
+	if (!form || !btn) return;
+	form.addEventListener('submit', function () {
+		btn.disabled = true;
+		btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Creating...';
+	});
+})();
+</script>
 </body>
 </html>

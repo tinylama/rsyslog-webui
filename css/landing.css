@@ -71,3 +71,8 @@
 	font-size: 1.4rem;
 	color: var(--bs-primary);
 }
+
+/* Solid primary CTA on gray page background (meets contrast vs outline-primary on bg-body-secondary) */
+.landing-docs .landing-docs-cta {
+	font-weight: 600;
+}

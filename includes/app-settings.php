@@ -30,7 +30,7 @@ function app_settings_apply_row(string $key, string $value): void
 {
 	global $azure_ad_enabled, $azure_ad_tenant_id, $azure_ad_client_id, $azure_ad_client_secret;
 	global $azure_ad_redirect_uri, $azure_ad_admin_group_id, $graph_mail_sender, $graph_mail_enabled;
-	global $https_whitelist_enabled, $https_whitelist_cidrs;
+	global $https_whitelist_enabled, $https_whitelist_cidrs, $local_mfa_required;
 
 	$key = trim($key);
 	if ($key === '') {
@@ -72,6 +72,9 @@ function app_settings_apply_row(string $key, string $value): void
 			break;
 		case 'https_whitelist_cidrs':
 			$https_whitelist_cidrs = $value;
+			break;
+		case 'local_mfa_required':
+			$local_mfa_required = ($value === '1' || strtolower($value) === 'true');
 			break;
 		default:
 			break;

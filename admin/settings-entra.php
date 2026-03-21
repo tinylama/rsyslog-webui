@@ -71,9 +71,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 				app_settings_save($pdo, 'graph_mail_enabled', '1', false);
 				app_settings_refresh_from_db();
 				$success = 'Graph mail enabled (email verification codes will send).';
+				auth_log_email_event('graph_mail_test', (string) ($graph_mail_sender ?? ''), 'sent', 'enable_graph_mail');
 			} else {
 				$detail = is_string($detail) && $detail !== '' ? $detail : 'token verification failed';
 				$error = 'Could not enable Graph mail. ' . $detail;
+				auth_log_email_event('graph_mail_test', (string) ($graph_mail_sender ?? ''), 'failed', $detail);
 			}
 		} elseif ($action === 'disable_graph_mail') {
 			app_settings_save($pdo, 'graph_mail_enabled', '0', false);
@@ -156,6 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 					app_settings_save($pdo, 'graph_mail_enabled', '1', false);
 					app_settings_save($pdo, 'azure_ad_enabled', $en ? '1' : '0', false);
 					$success = 'Settings saved and verified. Sign-in + email verification codes activated.';
+					auth_log_email_event('graph_mail_test', $graphMailSender, 'sent', 'settings_verify');
 				} else {
 					app_settings_save($pdo, 'azure_ad_enabled', ($en && $tokenOk) ? '1' : '0', false);
 					$detail = function_exists('graph_mail_last_error') ? graph_mail_last_error() : null;
@@ -168,6 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 					if (str_contains($detailLower, 'erroraccessdenied') || str_contains($detailLower, 'access is denied')) {
 						$error .= ' Tip: Graph token was acquired, but sending was denied. Ensure your Entra app has the `Mail.Send` application permission with admin consent, and that Exchange app-only access is granted for the configured sender mailbox UPN.';
 					}
+					auth_log_email_event('graph_mail_test', $graphMailSender, 'failed', $detail);
 				}
 			}
 		}

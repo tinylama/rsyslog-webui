@@ -32,18 +32,25 @@ if ($showOnboarding) {
 	}
 	$onboardingCsrf = (string) $_SESSION['csrf_onboarding'];
 }
+$snPlain = (string) ($site_name ?? 'System Logs');
+$viewerMetaDescription = $snPlain . ': live syslog search and tail, severity filters, filtersets, and role-based access.';
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php echo $site_name; ?></title>
+    <meta name="description" content="<?php echo htmlspecialchars($viewerMetaDescription, ENT_QUOTES, 'UTF-8'); ?>">
+    <title><?php echo htmlspecialchars($snPlain, ENT_QUOTES, 'UTF-8'); ?></title>
 
-    <!-- Bootstrap 5 (CDN) -->
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="dns-prefetch" href="https://ajax.googleapis.com">
+    <link rel="preconnect" href="https://ajax.googleapis.com" crossorigin>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"></noscript>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-table@1.22.1/dist/bootstrap-table.min.css" rel="stylesheet">
 	<link href="css/bootstrap-context.css" rel="stylesheet">
     <link href="css/custom.css" rel="stylesheet">
@@ -57,7 +64,17 @@ if ($showOnboarding) {
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
 	<link rel="manifest" href="site.webmanifest">
+    <script>
+    (function () {
+      try {
+        if (localStorage.getItem('darkSwitch') === 'dark') {
+          document.documentElement.setAttribute('data-bs-theme', 'dark');
+        }
+      } catch (e) {}
+    })();
+    </script>
   </head>
+  <body>
 
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
@@ -75,18 +92,12 @@ if ($showOnboarding) {
 		
 		getSummary();
 
-		// Dev-only demo query buttons (non-blocking; keeps the normal search behavior).
-		$(document).on('click', '.app-demoQuery', function () {
-			var q = $(this).data('demoQuery');
-			if (q === undefined || q === null) return;
-			q = String(q);
-			if (q === '') return;
-			$('#txtSearch').val(q);
-			if (typeof refreshEventsTable === 'function') {
-				refreshEventsTable();
-			} else {
-				$('#txtSearch').trigger('input');
-			}
+		// Dev-only severity chips: same toggle behavior as the severity strip (click again clears).
+		$(document).on('click', '.app-demoQuery', function (e) {
+			e.preventDefault();
+			var raw = $(this).data('demoSeverity');
+			if (raw === undefined || raw === null) return;
+			setSeverityFilter(String(raw).toUpperCase());
 		});
 
 		try {
@@ -196,6 +207,49 @@ if ($showOnboarding) {
 
 		var searchDebounceTimer = null;
 		var SEARCH_DEBOUNCE_MS = 320;
+		var lastSeveritySummaryCounts = {};
+		function setRefreshing(flag) {
+			var icon = $('#cmdSearch i');
+			if (!icon.length) return;
+			icon.toggleClass('app-spin', !!flag);
+		}
+
+		function currentSeverityFromSearch() {
+			var current = ($('#txtSearch').val() || '').trim();
+			if (current === '') return '';
+			var match = current.match(/"Severity"="(EMERGENCY|ALERT|CRITICAL|ERROR|WARNING|NOTICE|INFO|DEBUG)"/);
+			return match ? match[1] : '';
+		}
+
+		function syncDemoSeverityChipVisibility() {
+			var activeSev = currentSeverityFromSearch();
+			$('.app-demoQuery[data-demo-priority]').each(function () {
+				var p = parseInt($(this).attr('data-demo-priority'), 10);
+				var sev = String($(this).data('demoSeverity') || '').toUpperCase();
+				var n = lastSeveritySummaryCounts[p] || 0;
+				var show = n > 0 || (activeSev !== '' && sev === activeSev);
+				$(this).prop('hidden', !show);
+			});
+		}
+
+		function updateSeverityActiveState() {
+			var sev = currentSeverityFromSearch();
+			['#pgDebug', '#pgNotice', '#pgInfo', '#pgWarning', '#pgError'].forEach(function (id) {
+				$(id).removeClass('app-severity-active');
+			});
+			if (sev === 'DEBUG') $('#pgDebug').addClass('app-severity-active');
+			if (sev === 'NOTICE') $('#pgNotice').addClass('app-severity-active');
+			if (sev === 'INFO') $('#pgInfo').addClass('app-severity-active');
+			if (sev === 'WARNING') $('#pgWarning').addClass('app-severity-active');
+			if (sev === 'ERROR') $('#pgError').addClass('app-severity-active');
+			$('.app-demoQuery[data-demo-severity]').each(function () {
+				var s = String($(this).data('demoSeverity') || '').toUpperCase();
+				var on = s !== '' && s === sev;
+				$(this).toggleClass('active', on);
+				$(this).attr('aria-pressed', on ? 'true' : 'false');
+			});
+			syncDemoSeverityChipVisibility();
+		}
 
 		function refreshEventsTable() {
 			var classes = 'table table-sm table-hover small-table table-striped events-log-table';
@@ -204,6 +258,7 @@ if ($showOnboarding) {
 			var urlParams = hasFilterset
 				? "search=" + encodeURIComponent(search)
 				: "q=" + encodeURIComponent(search);
+			setRefreshing(true);
 			getSummary();
 			$('#table-style').bootstrapTable('destroy')
 				.bootstrapTable({
@@ -212,6 +267,10 @@ if ($showOnboarding) {
 					sidePagination: 'client',
 					sortable: true
 				});
+			$('#table-style').one('load-success.bs.table load-error.bs.table', function () {
+				setRefreshing(false);
+			});
+			updateSeverityActiveState();
 		}
 
 		function scheduleRefreshEventsTable() {
@@ -265,14 +324,18 @@ if ($showOnboarding) {
 			var token = "\"Severity\"=\"" + sev + "\"";
 			var current = ($('#txtSearch').val() || '').trim();
 			var tokens = current === '' ? [] : current.split(/\s+/).filter(Boolean);
-			var severityRe = /^"Severity"="(DEBUG|NOTICE|INFO|WARNING|ERROR)"$/;
+			var severityRe = /^"Severity"="(EMERGENCY|ALERT|CRITICAL|ERROR|WARNING|NOTICE|INFO|DEBUG)"$/;
+			var currentSeverity = currentSeverityFromSearch();
 
 			// Remove all severity tokens, then add back exactly one.
 			tokens = tokens.filter(function (t) { return !severityRe.test(t); });
-			tokens.push(token);
+			if (currentSeverity !== sev) {
+				tokens.push(token);
+			}
 
 			// Keep trailing space so the filter builder's space-splitting is stable.
 			$('#txtSearch').val(tokens.join(' ') + (tokens.length ? ' ' : ''));
+			updateSeverityActiveState();
 			refreshEventsTable();
 		}
 
@@ -350,6 +413,20 @@ if ($showOnboarding) {
 
 								$table.bootstrapTable('load', merged);
 								getSummary();
+								var reduceMotion = false;
+								try {
+									reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+								} catch (e) {}
+								if (!reduceMotion) {
+									newRows.forEach(function (r) {
+										if (!r || typeof r.ID === 'undefined') return;
+										var cls = '.ID_' + String(r.ID);
+										var rowEl = document.querySelector(cls);
+										if (!rowEl) return;
+										rowEl.classList.add('app-row-new');
+										setTimeout(function () { rowEl.classList.remove('app-row-new'); }, 1300);
+									});
+								}
 							}).fail(function() {
 								// Soft-fail: if incremental fetch fails, don't break the UI.
 							}).always(function() {
@@ -369,49 +446,80 @@ if ($showOnboarding) {
 			setLivePolling(this.checked);
 		});
 		setLivePolling($("#chkLive").prop("checked"));
+		updateSeverityActiveState();
+
+		/**
+		 * Dev severity chips: use unfiltered summary (same 2000-row window as the API default)
+		 * so buttons reflect severities present in the log stream, not the current table filter.
+		 */
+		function refreshGlobalSeverityChipCounts() {
+			if (!$('.app-demoQuery[data-demo-priority]').length) {
+				return;
+			}
+			$.getJSON('json/events_summary.php', function (data) {
+				if (!Array.isArray(data)) {
+					return;
+				}
+				var countsByPri = {};
+				for (var c = 0; c < data.length; c++) {
+					var pri = parseInt(data[c][0], 10);
+					if (isNaN(pri)) {
+						continue;
+					}
+					var qty = parseInt(data[c][1], 10) || 0;
+					countsByPri[pri] = (countsByPri[pri] || 0) + qty;
+				}
+				lastSeveritySummaryCounts = countsByPri;
+				syncDemoSeverityChipVisibility();
+			});
+		}
+
+		function getSummary() {
+			refreshGlobalSeverityChipCounts();
+			var search = $("#txtSearch").val();
+			var hasFilterset = search.indexOf('"') !== -1;
+			var urlParams = hasFilterset
+				? "search=" + encodeURIComponent(search)
+				: "q=" + encodeURIComponent(search);
+
+			$.getJSON("json/events_summary.php?" + urlParams, function (data) {
+				if (!Array.isArray(data)) {
+					return;
+				}
+				var items = data.length;
+				var sum = 0;
+				var progressBars = {
+					3: { id: "#pgError", flag: false },
+					4: { id: "#pgWarning", flag: false },
+					5: { id: "#pgNotice", flag: false },
+					6: { id: "#pgInfo", flag: false },
+					7: { id: "#pgDebug", flag: false }
+				};
+
+				for (var x = 0; x < items; x++) {
+					var key = parseInt(data[x][0], 10);
+					if (progressBars[key]) {
+						sum += data[x][1];
+					}
+				}
+
+				for (var xi = 0; xi < items; xi++) {
+					var key2 = parseInt(data[xi][0], 10);
+					if (progressBars[key2]) {
+						$(progressBars[key2].id).css('width', ((data[xi][1] / sum) * 100) + "%");
+						progressBars[key2].flag = true;
+					}
+				}
+
+				for (var pbKey in progressBars) {
+					if (!progressBars[pbKey].flag) {
+						$(progressBars[pbKey].id).css('width', "0%");
+					}
+				}
+			});
+		}
 		
     });
-
-	function getSummary() { 
-	    var search = $("#txtSearch").val();
-	    var hasFilterset = search.indexOf('"') !== -1;
-	    var urlParams = hasFilterset
-	    	? "search=" + encodeURIComponent(search)
-	    	: "q=" + encodeURIComponent(search);
-
-	    $.getJSON("json/events_summary.php?" + urlParams, function(data) {
-	        var items = data.length;
-	        var sum = 0;
-	        var progressBars = {
-	            3: { id: "#pgError", flag: false },
-	            4: { id: "#pgWarning", flag: false },
-	            5: { id: "#pgNotice", flag: false },
-	            6: { id: "#pgInfo", flag: false },
-	            7: { id: "#pgDebug", flag: false }
-	        };
-	
-	        for (var x = 0; x < items; x++) {
-	            var key = parseInt(data[x][0], 10);
-	            if (progressBars[key]) {
-	                sum += data[x][1];
-	            }
-	        }
-	
-	        for (var x = 0; x < items; x++) {
-	            var key = parseInt(data[x][0], 10);
-	            if (progressBars[key]) {
-	                $(progressBars[key].id).css('width', ((data[x][1] / sum) * 100) + "%");
-	                progressBars[key].flag = true;
-	            }
-	        }
-	
-	        for (var key in progressBars) {
-	            if (!progressBars[key].flag) {
-	                $(progressBars[key].id).css('width', "0%");
-	            }
-	        }
-	    });
-	}
 
 	
 	function toInt( val ) {
@@ -455,6 +563,16 @@ if ($showOnboarding) {
 	function LargeMessageFormat(value)
 	{
 		return "<span class='largemessage'>" + value + "</span>";
+	}
+
+	function TagFormat(value)
+	{
+		if (value === null || value === undefined) {
+			return '';
+		}
+		// rsyslog / RFC3164 often store TAG with a trailing ':' before the message; hide it in the grid.
+		var s = String(value).replace(/:+$/, '');
+		return escapeHtml(s);
 	}
 
 	function FacilityFormat(value)
@@ -502,11 +620,11 @@ if ($showOnboarding) {
         }
 
 	</script>
-  
- <body>
- 
+
 <div class="app-shell">
 <?php include __DIR__ . '/includes/partials/navbar-main.php'; ?>
+
+<main id="main-content">
 
 <?php if ($showOnboarding): ?>
 	<div id="rsyslogOnboardingOverlay" class="rsyslog-onboarding-overlay" data-csrf="<?php echo htmlspecialchars($onboardingCsrf, ENT_QUOTES, 'UTF-8'); ?>">
@@ -667,14 +785,31 @@ if ($showOnboarding) {
 			</div>
 		</div>
 
-		<?php if ($devMode): ?>
-			<div class="d-flex flex-wrap gap-2 justify-content-md-end">
-				<button type="button" class="btn btn-sm btn-outline-secondary app-demoQuery" data-demo-query='"Severity"="ERROR" ' title="Filter demo severity">
-					<i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>Error only
+		<?php if ($devMode):
+			$demoSeverityChips = [
+				['EMERGENCY', 'bi-exclamation-octagon', 'Emergency', 0],
+				['ALERT', 'bi-bell', 'Alert', 1],
+				['CRITICAL', 'bi-shield-exclamation', 'Critical', 2],
+				['ERROR', 'bi-exclamation-triangle', 'Error', 3],
+				['WARNING', 'bi-exclamation-circle', 'Warning', 4],
+				['NOTICE', 'bi-info-circle', 'Notice', 5],
+				['INFO', 'bi-info-square', 'Info', 6],
+				['DEBUG', 'bi-bug', 'Debug', 7],
+			];
+			?>
+			<div class="d-flex flex-wrap gap-2 justify-content-md-end" role="toolbar" aria-label="Demo severity filters">
+				<?php foreach ($demoSeverityChips as $chip):
+					[$sev, $icon, $label, $pri] = $chip;
+					$sevEsc = htmlspecialchars($sev, ENT_QUOTES, 'UTF-8');
+					$iconEsc = htmlspecialchars($icon, ENT_QUOTES, 'UTF-8');
+					$labelEsc = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
+					$titleEsc = htmlspecialchars('Filter or clear ' . strtolower($label) . ' severity', ENT_QUOTES, 'UTF-8');
+					$priEsc = htmlspecialchars((string) (int) $pri, ENT_QUOTES, 'UTF-8');
+					?>
+				<button type="button" class="btn btn-sm btn-outline-secondary app-demoQuery" data-demo-severity="<?php echo $sevEsc; ?>" data-demo-priority="<?php echo $priEsc; ?>" title="<?php echo $titleEsc; ?>" aria-pressed="false" hidden>
+					<i class="bi <?php echo $iconEsc; ?> me-1" aria-hidden="true"></i><?php echo $labelEsc; ?>
 				</button>
-				<button type="button" class="btn btn-sm btn-outline-secondary app-demoQuery" data-demo-query='"Severity"="WARNING" ' title="Filter demo severity">
-					<i class="bi bi-exclamation-circle me-1" aria-hidden="true"></i>Warnings
-				</button>
+				<?php endforeach; ?>
 			</div>
 		<?php endif; ?>
 	</div>
@@ -727,7 +862,7 @@ if ($showOnboarding) {
 			<th data-field="DeviceReportedTime" data-sortable="true" data-width="154">Time</th>
 			<th data-field="Facility" data-formatter="FacilityFormat" data-sortable="true" data-width="132">Facility</th>
 			<th data-field="FromHost" data-sortable="true" data-width="120">Host</th>
-			<th data-field="SysLogTag" data-sortable="true" data-width="120">Tag</th>
+			<th data-field="SysLogTag" data-formatter="TagFormat" data-sortable="true" data-width="120">Tag</th>
 			<th data-field="processid" data-visible="false">PID</th>
 			<th data-field="Messagetype" data-formatter="MessagetypeFormat" data-sortable="true" data-align="center" data-width="96">Type</th>
 			<th data-field="SmallMessage" data-formatter="MessageFormat" data-sortable="true">Message</th>
@@ -736,7 +871,8 @@ if ($showOnboarding) {
 	</thead>
   </table>
   </div>
-  
+
+</main>
 </div>
 <footer class="footer">
     <div class="container">

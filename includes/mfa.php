@@ -118,6 +118,10 @@ function auth_user_requires_mfa(PDO $pdo, int $userId, ?array $row = null): bool
 	if ($row === null) {
 		return false;
 	}
+	$isLocal = !isset($row['ExternalProvider']) || trim((string) $row['ExternalProvider']) === '';
+	if ($isLocal && function_exists('auth_local_mfa_required') && auth_local_mfa_required()) {
+		return true;
+	}
 	if (!empty($row['MfaRequired'])) {
 		return true;
 	}
@@ -271,8 +275,13 @@ function auth_email_code_challenge_start(PDO $pdo, int $userId, string $toEmail)
 		'INSERT INTO MfaEmailChallenges (UserID, CodeHash, ExpiresAt) VALUES (:uid, :h, :e)'
 	);
 	$ins->execute([':uid' => $userId, ':h' => $hash, ':e' => $exp]);
-
-	return graph_mail_send_mfa_code($toEmail, $code);
+	$ok = graph_mail_send_mfa_code($toEmail, $code);
+	if (function_exists('auth_log_email_event')) {
+		$status = $ok ? 'sent' : 'failed';
+		$detail = $ok ? 'code_sent' : (graph_mail_last_error() ?? 'send_failed');
+		auth_log_email_event('verification_code', $toEmail, $status, $detail);
+	}
+	return $ok;
 }
 
 function auth_email_code_challenge_verify(PDO $pdo, int $userId, string $code): bool

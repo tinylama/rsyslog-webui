@@ -207,6 +207,15 @@ $creds = $stmtC->fetchAll(PDO::FETCH_ASSOC);
 $stmtU = $pdo->prepare('SELECT Username FROM Users WHERE ID = :id LIMIT 1');
 $stmtU->execute([':id' => $uid]);
 $username = (string) $stmtU->fetchColumn();
+$signinStmt = $pdo->prepare(
+	'SELECT CreatedAt, Provider, Outcome, Reason, ClientIP
+	 FROM SignInLogs
+	 WHERE UserID = :id
+	 ORDER BY ID DESC
+	 LIMIT 15'
+);
+$signinStmt->execute([':id' => $uid]);
+$signinRows = $signinStmt->fetchAll(PDO::FETCH_ASSOC);
 
 $sessionTimeoutSeconds = 1800;
 try {
@@ -254,6 +263,17 @@ $csrfEnc = htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8');
 	<nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom mb-3 app-navbar">
 		<div class="container-fluid px-0 px-sm-2">
 			<a class="navbar-brand" href="../"><?php echo $siteTitle; ?></a>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#accountNavbar" aria-controls="accountNavbar" aria-expanded="false" aria-label="Toggle account navigation">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+			<div class="collapse navbar-collapse" id="accountNavbar">
+				<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+					<li class="nav-item"><a class="nav-link active" aria-current="page" href="../account/security.php">Account</a></li>
+					<li class="nav-item"><a class="nav-link" href="../docs/index.php">Documentation</a></li>
+					<?php if (($me['role'] ?? '') === 'admin'): ?>
+						<li class="nav-item"><a class="nav-link" href="../admin/users.php">Admin</a></li>
+					<?php endif; ?>
+				</ul>
 			<div class="ms-auto d-flex align-items-center gap-2">
 				<div class="form-check form-switch m-0">
 					<input class="form-check-input" type="checkbox" id="darkSwitch" aria-label="Dark mode">
@@ -274,6 +294,7 @@ $csrfEnc = htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8');
 						</li>
 					</ul>
 				</div>
+			</div>
 			</div>
 		</div>
 	</nav>
@@ -408,8 +429,35 @@ $csrfEnc = htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8');
 
 	<div class="card border-0 shadow-sm mb-4">
 		<div class="card-body p-4">
+			<h2 class="h5">Recent sign-in activity</h2>
+			<div class="table-responsive">
+				<table class="table table-sm align-middle small mb-0">
+					<thead>
+						<tr><th>Time</th><th>Provider</th><th>Outcome</th><th>Reason</th><th>IP</th></tr>
+					</thead>
+					<tbody>
+					<?php if ($signinRows === []): ?>
+						<tr><td colspan="5" class="text-muted">No sign-in events recorded yet.</td></tr>
+					<?php endif; ?>
+					<?php foreach ($signinRows as $sr): ?>
+						<tr>
+							<td><?php echo htmlspecialchars((string) ($sr['CreatedAt'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
+							<td><?php echo htmlspecialchars((string) ($sr['Provider'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
+							<td><span class="badge <?php echo (($sr['Outcome'] ?? '') === 'allowed') ? 'bg-success' : 'bg-danger'; ?>"><?php echo htmlspecialchars((string) ($sr['Outcome'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></span></td>
+							<td><?php echo htmlspecialchars((string) ($sr['Reason'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
+							<td><?php echo htmlspecialchars((string) ($sr['ClientIP'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
+						</tr>
+					<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+	<div class="card border-0 shadow-sm mb-4">
+		<div class="card-body p-4">
 			<h2 class="h5" id="passkeys-section">Passkeys</h2>
-			<p class="text-muted small">Security keys or device biometrics. HTTPS required in production (localhost is OK for dev).</p>
+			<p class="text-muted small">Security keys or device biometrics.</p>
 			<button type="button" class="btn btn-primary btn-sm mb-3" id="addPasskey" <?php echo $securityBaselineSafe ? '' : 'disabled'; ?>><i class="bi bi-key me-1" aria-hidden="true"></i>Add passkey</button>
 			<ul class="list-group list-group-flush">
 				<?php foreach ($creds as $c): ?>

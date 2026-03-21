@@ -13,16 +13,22 @@ This guide covers Docker-first deployment (development and TLS/production), remo
 
 ## Docker Stacks at a Glance
 
-- `docker-compose.yml` (development):
-  - Web UI on `8080` (default)
-  - MySQL host port `3307` (default)
+- `docker-compose.yml` (**default for production HTTPS** when used with `.env.tls` from `docker/tls.env.example`):
+  - `COMPOSE_PROFILES=tls` in `.env.tls` starts Traefik on host `80/443` (no `--profile tls` flag needed)
+  - Web UI also on `WEB_PORT` → container `80` (default `8080`) for direct HTTP to Apache while Traefik serves HTTPS
+  - MySQL on host `3306` → container `3306` (override with `MYSQL_HOST_PORT`)
   - Collector on `5514` UDP/TCP
-- `docker-compose.tls.yml` (production/TLS):
-  - Traefik on `80/443`
-  - MySQL host port `3308` (default)
-  - Collector on `5514` UDP/TCP
+- `docker-compose.yml` (development, **no** `.env.tls`):
+  - Web UI on `8080` (default); Traefik **not** started
+  - Same MySQL and collector ports as above
+- `docker-compose.tls.yml` (optional **alternate** TLS stack, **automated certs**):
+  - Same Let’s Encrypt / Traefik behavior; isolated `internal`/`edge` networks
+  - Use if you prefer not to use the main compose file for production
+- `docker-compose.tls-manual.yml` (production/TLS, **manual certificates**):
+  - Traefik on `80/443`; no Cloudflare API token
+  - You supply `docker/certs/tls.crt` and `docker/certs/tls.key` on the host
 
-Collector behavior (both stacks):
+Collector behavior (all stacks):
 
 - Accepts incoming network syslog only
 - Writes to `SystemEvents` in MySQL
@@ -37,9 +43,7 @@ Collector behavior (both stacks):
    ```
 
 2. Open `http://localhost:8080`.
-3. Sign in with seeded admin:
-   - `admin`
-   - `admin123`
+3. On first login, create your admin username and strong password (minimum 12 chars with upper/lower/number).
 4. Send a local test event:
 
    ```bash
@@ -55,10 +59,10 @@ Collector behavior (both stacks):
 ### Development Port Overrides
 
 - `WEB_PORT` default: `8080`
-- `MYSQL_HOST_PORT` default: `3307`
+- `MYSQL_HOST_PORT` default: `3306` (host port mapped to MySQL in the container)
 - `RSYSLOG_INGEST_PORT` default: `5514`
 
-PowerShell example:
+PowerShell example (e.g. if host `3306` is already used by another MySQL):
 
 ```powershell
 $env:WEB_PORT='8888'
@@ -69,29 +73,71 @@ docker compose up --build -d
 
 ## Option B: TLS/Production Docker
 
-1. Copy and edit environment file:
+Use **either** automated ACME (Cloudflare) **or** your own certificate files.
+
+### B1 — Automated TLS (Cloudflare DNS-01)
+
+**Recommended:** use the main compose file and `.env.tls` (the example file sets `COMPOSE_PROFILES=tls`).
+
+1. Copy and edit environment file (`TLS_DOMAIN`, `ACME_EMAIL`, `CF_DNS_API_TOKEN`, strong secrets):
 
    ```bash
    cp docker/tls.env.example .env.tls
    ```
 
-2. Start TLS stack:
+2. Start stack:
 
    ```bash
-   docker compose --env-file .env.tls -f docker-compose.tls.yml up -d --build
+   docker compose --env-file .env.tls up -d --build
    ```
 
-3. Verify services/ports:
+3. Verify:
 
    ```bash
-   docker compose --env-file .env.tls -f docker-compose.tls.yml ps
+   docker compose --env-file .env.tls ps
    ```
 
-Expected:
+**Alternate** (equivalent TLS layout, separate compose file):
+
+```bash
+docker compose --env-file .env.tls -f docker-compose.tls.yml up -d --build
+docker compose --env-file .env.tls -f docker-compose.tls.yml ps
+```
+
+If your `.env.tls` omits `COMPOSE_PROFILES=tls`, use `docker compose --env-file .env.tls --profile tls up -d --build` instead of step 2.
+
+### B2 — Manual TLS (no Cloudflare API key)
+
+1. Place certificate and private key on the host (PEM format):
+
+   - `docker/certs/tls.crt` — full chain if your CA provides a chain file (concatenate leaf + intermediates)
+   - `docker/certs/tls.key` — private key (restrict file permissions on the host)
+
+2. Copy env file and set secrets (you can leave `CF_DNS_API_TOKEN` empty for this stack):
+
+   ```bash
+   cp docker/tls.env.example .env.tls
+   ```
+
+3. Start stack:
+
+   ```bash
+   docker compose --env-file .env.tls -f docker-compose.tls-manual.yml up -d --build
+   ```
+
+4. Verify:
+
+   ```bash
+   docker compose --env-file .env.tls -f docker-compose.tls-manual.yml ps
+   ```
+
+Expected for both B1 and B2:
 
 - `traefik` on `80/443`
-- `db` on `3308` (default)
+- `db` on host `3306` (default; same as dev compose)
 - `rsyslog` on `5514` UDP/TCP
+
+More detail: [Deployment and TLS](deployment.md) and repository `docker/TLS.md`.
 
 ### Remote Sender Quick Test
 
@@ -106,6 +152,13 @@ Then verify on the Docker host:
 ```bash
 docker exec rsyslog-webui-db-1 mysql -ursyslog -prsyslog rsyslogdb -e "SELECT ID, FromHost, SysLogTag, LEFT(Message,120) AS msg FROM SystemEvents ORDER BY ID DESC LIMIT 10;"
 ```
+
+## Admin Setup Checklist
+
+- Enable local MFA policy if your local accounts must enforce second factor.
+- Configure Microsoft Entra settings if SSO is required.
+- Use Admin -> Collector config to generate sender snippets for collector mode or direct SQL mode.
+- Validate Admin -> Logs shows sign-in/access/email audit events after your first tests.
 
 ### Sender Forwarding Config (Same Port `5514`)
 
@@ -162,7 +215,7 @@ sudo journalctl -n 50 --no-pager
 If you prefer senders writing directly to MySQL with `ommysql`, use:
 
 - host: `<docker-host-ip>`
-- port: `3308` (TLS stack default)
+- port: `3306` (default published MySQL port; set `MYSQL_HOST_PORT` if you use a different host binding)
 - db/user/password: `rsyslogdb` / `rsyslog` / `rsyslog`
 
 ## Option C: Manual/Bare-Metal

@@ -1,12 +1,14 @@
 # HTTPS stack: Traefik terminates TLS with Let's Encrypt (DNS-01 via Cloudflare).
+# For manual certificate mode (no Cloudflare API key), use docker-compose.tls-manual.yml.
 #
-# Use this file instead of publishing the web container directly:
+# **Default / recommended** is the main compose file with `.env.tls` (see README):
+#   docker compose --env-file .env.tls up -d --build
+#
+# This file is an **alternate** full stack (isolated networks). Use when you prefer it:
 #   cp docker/tls.env.example .env.tls
-#   # edit .env.tls: TLS_DOMAIN, ACME_EMAIL, CF_DNS_API_TOKEN (DNS:Edit on the zone)
 #   docker compose --env-file .env.tls -f docker-compose.tls.yml up -d --build
 #
-# Stop any existing `docker compose up` that binds WEB_PORT first (port 80/443 required).
-# See docker/TLS.md for Cloudflare token scopes and reverse-proxy notes.
+# Stop anything else binding host ports 80/443 before starting. See docker/TLS.md.
 
 name: rsyslog-webui
 
@@ -23,7 +25,7 @@ services:
       - db-data:/var/lib/mysql
       - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     ports:
-      - "${MYSQL_HOST_PORT:-3308}:3306"
+      - "${MYSQL_HOST_PORT:-3306}:3306"
     networks:
       - internal
 
@@ -39,6 +41,10 @@ services:
 
   web:
     build: .
+    # Mount source like docker-compose.yml so PHP/CSS updates apply without rebuilding the image.
+    volumes:
+      - .:/var/www/html
+      - web-vendor:/var/www/html/vendor
     depends_on:
       - db
     environment:
@@ -52,6 +58,8 @@ services:
       RSYSLOG_SESSION_SECRET: ${RSYSLOG_SESSION_SECRET:-change-me-in-production}
       RSYSLOG_ADMIN_USERNAME: ${RSYSLOG_ADMIN_USERNAME:-admin}
       RSYSLOG_ADMIN_PASSWORD: ${RSYSLOG_ADMIN_PASSWORD:-admin123}
+      RSYSLOG_LOGIN_RATE_LIMIT: "0"
+      RSYSLOG_E2E_ENABLED: "1"
     networks:
       - internal
       - edge
@@ -104,3 +112,4 @@ networks:
 volumes:
   db-data:
   traefik-letsencrypt:
+  web-vendor:
